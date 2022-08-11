@@ -129,7 +129,7 @@ SDRPlot
 
 We now visualize age-standardized death rates by sex, race/ethnicity, place of birth, and cause of death. In the graph below we let the y-axis vary across causes of death to make it easier to see the difference between the groups.
 
-```{r, fig.height=16, fig.width=10}
+```{r, fig.height=16, fig.width=11}
 
 causeSpecificSDRPlot <- ageStdRates %>%
   filter(!(causeOfDeath %in% c('Total','COVID-19'))) %>%
@@ -152,7 +152,7 @@ causeSpecificSDRPlot
 
 We now create the graph once more fixing the y-axis to better visualize the differences across causes of death.
 
-```{r, fig.height=16, fig.width=10}
+```{r, fig.height=16, fig.width=11}
 
 causeSpecificSDRPlot <- ageStdRates %>%
   filter(!(causeOfDeath %in% c('Total','COVID-19'))) %>%
@@ -201,7 +201,7 @@ COVIDASDRPlot
 ```
 To make the comparison easier, we now use age-standardized COVID-19 death rates. WE lose the age detail but can more readily compare overall mortality across groups.
 
-```{r}
+```{r, fig.width=5}
 
 COVIDSDRPlot <- ageStdRates %>%
   filter(causeOfDeath== 'COVID-19',
