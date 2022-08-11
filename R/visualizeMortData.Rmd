@@ -61,7 +61,7 @@ ASDRPlot <- finalTable %>%
   ggplot() +
   geom_line(mapping = aes(x=as.numeric(age),y=logASDR,linetype=foreign)) +
   scale_x_continuous(breaks=1:11,labels=levels(finalTable$age)[1:11]) +
-  labs(title='Age Specific Death Rates by Sex, Race/Ethnicity, and Place of Birth',
+  labs(title='Age Specific Death Rates\nby Sex, Race/Ethnicity, and Place of Birth',
        x='Age',
        y='log(ASDR)',
        linetype='Place of Birth') +
@@ -111,7 +111,7 @@ SDRPlot <- ageStdRates %>%
   filter(causeOfDeath =='Total') %>%
   ggplot() +
   geom_line(mapping = aes(x=year,y=SDR,linetype=foreign)) +
-  labs(title='Age Standardized Death Rates by Sex, Race/Ethnicity, Place of Birth',
+  labs(title='Age Standardized Death Rates\nby Sex, Race/Ethnicity, Place of Birth',
        x='',
        y='Age-Standardized Death Rate',
        linetype='Place of Birth') +
@@ -135,7 +135,7 @@ causeSpecificSDRPlot <- ageStdRates %>%
   filter(!(causeOfDeath %in% c('Total','COVID-19'))) %>%
   ggplot() +
   geom_line(mapping = aes(x=year,y=logSDR,linetype=foreign)) +
-  labs(title='Age Standardized Death Rates by Sex, Race/Ethnicity, Place of Birth, and Cause of Death',
+  labs(title='Age Standardized Death Rates\nby Sex, Race/Ethnicity, Place of Birth, and Cause of Death',
        x='',
        y='Age-Standardized Death Rate (log)',
        linetype='Place of Birth') +
@@ -158,7 +158,7 @@ causeSpecificSDRPlot <- ageStdRates %>%
   filter(!(causeOfDeath %in% c('Total','COVID-19'))) %>%
   ggplot() +
   geom_line(mapping = aes(x=year,y=logSDR,linetype=foreign)) +
-  labs(title='Age Standardized Death Rates by Sex, Race/Ethnicity, Place of Birth, and Cause of Death',
+  labs(title='Age Standardized Death Rates\nby Sex, Race/Ethnicity, Place of Birth, and Cause of Death',
        x='',
        y='Age-Standardized Death Rate (log)',
        linetype='Place of Birth') +
@@ -187,7 +187,7 @@ COVIDASDRPlot <- finalTable %>%
   ggplot() +
   geom_line(mapping = aes(x=as.numeric(age),y=logASDR,linetype=foreign)) +
   scale_x_continuous(breaks=1:11,labels=levels(finalTable$age)[1:11]) +
-  labs(title='Age Specific COVID-19 Death Rates by Sex, Race/Ethnicity, and Place of Birth',
+  labs(title='Age Specific COVID-19 Death Rates\nby Sex, Race/Ethnicity, and Place of Birth',
        x='Age',
        y='log(ASDR)',
        linetype='Place of Birth') +
@@ -208,7 +208,7 @@ COVIDSDRPlot <- ageStdRates %>%
          year == 2020) %>%
   ggplot() +
   geom_point(mapping = aes(x=raceEthnicity,y=SDR,shape=foreign)) +
-  labs(title='Age Standardized COVID-19 Death Rates by Sex, Race/Ethnicity, and Place of Birth',
+  labs(title='Age Standardized COVID-19 Death Rates\nby Sex, Race/Ethnicity, and Place of Birth',
        x='',
        y='Age-Standardized Death Rate',
        shape='Place of Birth') +
