@@ -221,14 +221,8 @@ mortTable <- mortData %>%
 
 ```{r}
 
-mortTable <- crossing(year=unique(pull(mortTable,year)),
-                      sex=unique(pull(mortTable,sex)),
-                      raceEthnicity=unique(pull(mortTable,raceEthnicity)),
-                      foreign=unique(pull(mortTable,foreign)),
-                      causeOfDeath=unique(pull(mortTable,causeOfDeath)),
-                      age=unique(pull(mortTable,age))) %>%
-  left_join(mortTable) %>%
-  mutate(deaths = ifelse(is.na(deaths), 0, deaths))
+mortTable <- mortTable %>%
+  complete(year,sex,raceEthnicity,foreign,causeOfDeath,age,fill=list(deaths=0))
 
 ```
 
