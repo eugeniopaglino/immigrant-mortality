@@ -1,0 +1,221 @@
+---
+title: "Visualizing Mortality Data"
+author: "Eugenio Paglino"
+output:
+  github_document
+---
+
+```{r, echo=F, include=F}
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'
+)
+
+```
+
+```{r}
+
+# Loading necessary packages
+
+library(here)
+library(tidyverse)
+
+# Set seed for the Rmd
+
+set.seed(42)
+
+```
+
+```{r, echo=FALSE, message=F, warning=F}
+
+# Do not rely on this to completely clean your environment
+# Better to do a full restart of R before running
+
+rm(list=ls())
+
+i_am('R/createMortTable.Rmd')
+
+inDir <- here('data','input')
+outDir <- here('data','output')
+
+```
+
+```{r}
+
+finalTable <- arrow::read_feather(here(outDir,'finalTable.feather'))
+
+```
+
+## Data Overview
+
+We start by visualizing the age-specific death rates by sex, race/ethnicity, and place of birth. We aggregate all causes to keep the amount of information manageable.
+
+```{r,fig.width=10,fig.height=8}
+
+ASDRPlot <- finalTable %>%
+  filter(causeOfDeath == 'Total',
+         raceEthnicity %in% c('White','Black','Hispanic')) %>%
+  ggplot() +
+  geom_line(mapping = aes(x=as.numeric(age),y=logASDR,linetype=foreign)) +
+  scale_x_continuous(breaks=1:11,labels=levels(finalTable$age)[1:11]) +
+  labs(title='Age Specific Death Rates by Sex, Race/Ethnicity, and Place of Birth',
+       x='Age',
+       y='log(ASDR)',
+       linetype='Place of Birth') +
+  facet_grid(raceEthnicity + sex ~ year) +
+  theme_minimal() +
+  theme(legend.position = 'bottom',
+        axis.text.x = element_text(angle=45))
+
+ASDRPlot
+
+```
+
+```{r}
+
+ageDist <- finalTable %>%
+  filter(causeOfDeath=='Total') %>%
+  group_by(age,sex) %>%
+  summarise(popShare = sum(pop)) %>%
+  ungroup() %>%
+  mutate(popShare = popShare/sum(popShare))
+
+ageStdRates <- finalTable %>%
+  filter(raceEthnicity %in% c('White','Black','Hispanic')) %>%
+  left_join(ageDist,by=c('age','sex')) %>%
+  group_by(sex,raceEthnicity,foreign,year,causeOfDeath) %>%
+  summarise(SDR = sum(ASDR*popShare),
+            logSDR = if_else(SDR==0,NA_real_,log(SDR))) %>%
+  ungroup()
+
+```
+
+```{r}
+
+ageStdRates %>%
+  relocate(year,sex,raceEthnicity,foreign,causeOfDeath) %>%
+  arrange(year,sex,raceEthnicity,foreign,causeOfDeath) %>%
+  mutate(causeOfDeath = str_replace_all(causeOfDeath,'\n',' ')) %>%
+  write_excel_csv(here(outDir,'ageStdRates.csv'))
+
+```
+
+We now plot age-standardized rates by sex, race/ethnicity, and place of birth. This summary measures obscures difference in age-specific mortality but is helpful in summarizing mortality differences among groups. We use the national age distribution (all groups combined) to standardized the rates.
+
+```{r}
+
+SDRPlot <- ageStdRates %>%
+  filter(causeOfDeath =='Total') %>%
+  ggplot() +
+  geom_line(mapping = aes(x=year,y=SDR,linetype=foreign)) +
+  labs(title='Age Standardized Death Rates by Sex, Race/Ethnicity, Place of Birth',
+       x='',
+       y='Age-Standardized Death Rate',
+       linetype='Place of Birth') +
+  facet_grid(raceEthnicity ~ sex, scales='free_y',switch = 'y') +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=45),
+        legend.position = 'bottom',
+        strip.background = element_blank(),
+        strip.placement = 'outside',
+        strip.text.y.left = element_text(angle = 0))
+
+SDRPlot
+
+```
+
+We now visualize age-standardized death rates by sex, race/ethnicity, place of birth, and cause of death. In the graph below we let the y-axis vary across causes of death to make it easier to see the difference between the groups.
+
+```{r, fig.height=16, fig.width=10}
+
+causeSpecificSDRPlot <- ageStdRates %>%
+  filter(!(causeOfDeath %in% c('Total','COVID-19'))) %>%
+  ggplot() +
+  geom_line(mapping = aes(x=year,y=logSDR,linetype=foreign)) +
+  labs(title='Age Standardized Death Rates by Sex, Race/Ethnicity, Place of Birth, and Cause of Death',
+       x='',
+       y='Age-Standardized Death Rate (log)',
+       linetype='Place of Birth') +
+  facet_grid(causeOfDeath ~ raceEthnicity + sex, scales='free_y',switch = 'y') +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=45),
+        axis.text.y = element_blank(),
+        legend.position = 'bottom',
+        strip.text.y.left = element_text(angle = 0))
+
+causeSpecificSDRPlot
+
+```
+
+We now create the graph once more fixing the y-axis to better visualize the differences across causes of death.
+
+```{r, fig.height=16, fig.width=10}
+
+causeSpecificSDRPlot <- ageStdRates %>%
+  filter(!(causeOfDeath %in% c('Total','COVID-19'))) %>%
+  ggplot() +
+  geom_line(mapping = aes(x=year,y=logSDR,linetype=foreign)) +
+  labs(title='Age Standardized Death Rates by Sex, Race/Ethnicity, Place of Birth, and Cause of Death',
+       x='',
+       y='Age-Standardized Death Rate (log)',
+       linetype='Place of Birth') +
+  facet_grid(causeOfDeath ~ raceEthnicity + sex,switch = 'y') +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle=45),
+        legend.position = 'bottom',
+        strip.background = element_blank(),
+        strip.placement = 'outside',
+        strip.text.y.left = element_text(angle = 0))
+
+causeSpecificSDRPlot
+
+```
+
+## COVID-19 Mortality among Foreign-Born
+
+Here we compare COVID-19 age-specific mortality rates between foreign born and US born by sex and race/ethnicity.
+
+```{r}
+
+COVIDASDRPlot <- finalTable %>%
+  filter(causeOfDeath == 'COVID-19',
+         raceEthnicity %in% c('White','Black','Hispanic'),
+         year == 2020) %>%
+  ggplot() +
+  geom_line(mapping = aes(x=as.numeric(age),y=logASDR,linetype=foreign)) +
+  scale_x_continuous(breaks=1:11,labels=levels(finalTable$age)[1:11]) +
+  labs(title='Age Specific COVID-19 Death Rates by Sex, Race/Ethnicity, and Place of Birth',
+       x='Age',
+       y='log(ASDR)',
+       linetype='Place of Birth') +
+  facet_grid(raceEthnicity ~ sex) +
+  theme_minimal() +
+  theme(legend.position = 'bottom',
+        axis.text.x = element_text(angle=45))
+
+COVIDASDRPlot
+
+```
+To make the comparison easier, we now use age-standardized COVID-19 death rates. WE lose the age detail but can more readily compare overall mortality across groups.
+
+```{r}
+
+COVIDSDRPlot <- ageStdRates %>%
+  filter(causeOfDeath== 'COVID-19',
+         year == 2020) %>%
+  ggplot() +
+  geom_point(mapping = aes(x=raceEthnicity,y=SDR,shape=foreign)) +
+  labs(title='Age Standardized COVID-19 Death Rates by Sex, Race/Ethnicity, and Place of Birth',
+       x='',
+       y='Age-Standardized Death Rate',
+       shape='Place of Birth') +
+  facet_grid( ~ sex) +
+  theme_minimal() +
+  theme(legend.position = 'bottom')
+
+COVIDSDRPlot
+
+```

@@ -1,0 +1,10 @@
+/data
+.Rhistory
+.DS_Store
+/R/dataCreation.Rmd
+/R/raceComparison.Rmd
+/R/raceComparisonAlt.Rmd
+/R/raceComparison.html
+/R/raceComparisonAlt.html
+/previousPapers
+notes.txt
