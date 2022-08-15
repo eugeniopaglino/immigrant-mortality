@@ -1,5 +1,8 @@
-# Comparing Mortality Between US Born and Foreign Born (2017-2020)
+## Immigrant Mortality during the COVID-19 Epidemic
 
-In this project we explore differences in mortality between foreign born and US born in the United States.
+We wish to investigate patterns of mortality among immigrant in the United States during the first year of the COVID-19 pandemic. Here is a summary of our findings so far:
 
-All code is stored in the R folder. We do not make the data available as its use is restricted. Summary information is contained in the R folder in the form of a markdown document.
+- [A firt look at the mortality data](https://htmlpreview.github.io/?https://github.com/eugeniopaglino/immigrant-mortality/blob/main/R/visualizeMortData.html)
+- [An analysis of COVID-19 comorbidities](https://github.com/eugeniopaglino/immigrant-mortality/blob/main/R/createComorbTable.html)
+
+You can reach the project's website [here](https://eugeniopaglino.github.io/immigrant-mortality/).
