@@ -1,0 +1,166 @@
+---
+title: "Most Frequent Causes of Death Co-Occuring with COVID-19"
+author: "Eugenio Paglino"
+output:
+  html_document
+---
+
+```{r, echo=F, include=F}
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+
+```
+
+```{r}
+
+# Loading necessary packages
+
+library(here)
+library(glue)
+library(kableExtra)
+library(tidyverse)
+
+# Set seed for the Rmd
+
+set.seed(42)
+
+```
+
+```{r}
+
+# Do not rely on this to completely clean your environment
+# Better to do a full restart of R before running
+
+rm(list=ls())
+
+i_am('R/createMortTable.Rmd')
+
+inDir <- here('data','input')
+outDir <- here('data','output')
+
+```
+
+```{r}
+
+ICD10Codebook <- read_fwf(here(inDir,'ICD10CMCodes','ICD10CMCodesAll.txt'),
+                          col_positions = fwf_cols(ICDCode=c(7,13),
+                                                   label=c(78,NA)))
+
+```
+
+```{r}
+
+read.mort.data <- function(file) {
+  
+  mortData <- read_fwf(file,
+                       col_positions = fwf_cols(year=c(102,105),
+                                                resident=c(19,19),
+                                                stateOccurrence=c(21,22),
+                                                countyOccurrence=c(23,25),
+                                                stateResidence=c(29,30),
+                                                countyResidence=c(35,37),
+                                                sex=c(69,69),
+                                                race=c(450,450),
+                                                age=c(79,80),
+                                                bpl=c(59,60),
+                                                hispanic=c(484,486),
+                                                underCond=c(146,149),
+                                                contrConds=c(344,443)),
+                       col_types = cols(age=col_integer()))
+  
+  return(mortData)
+  
+}
+
+combine.mort.data <- function(files) {
+  
+  for (file in files) {
+    
+    if (file == files[1]) {
+      mortData <- read.mort.data(file)
+    } else {
+      mortData <- mortData %>%
+        add_row(read.mort.data(file))
+    }
+    
+  }
+  
+  return(mortData)
+  
+}
+
+```
+
+```{r}
+
+files <- sapply(2020,function(x) here(inDir,glue('mort{x}'),glue('MULT{x}USAllCnty.txt')))
+
+mortData <- combine.mort.data(files)
+
+```
+
+```{r}
+
+comorbData <- mortData %>%
+  filter((underCond == 'U071' | str_detect(contrConds,'U071'))) %>%
+  mutate(contrCondsMain = str_match_all(contrConds,'[:alpha:]{1}[:digit:]{2}'),
+         contrCondsMain = sapply(contrCondsMain,
+                                 function(x) paste(x,collapse=' ')))
+
+comorbRecords <- comorbData %>%
+  separate(contrCondsMain, sapply(1:20,function(x) paste0('cond',x)),sep='[[:space:]]+') %>%
+  pivot_longer(cond1:cond20,names_to = 'condNum',values_to = 'ICDCode') %>%
+  drop_na(ICDCode) %>%
+  group_by(ICDCode) %>%
+  summarise(cases=n(),
+            prop=cases/nrow(comorbData)) %>%
+  ungroup() %>%
+  left_join(ICD10Codebook,by='ICDCode')
+  
+```
+
+```{r}
+
+comorbRecords %>%
+  filter(prop>=0.01,ICDCode != 'U07') %>%
+  mutate(prop=100*prop) %>%
+  arrange(desc(prop)) %>%
+  kable(col.names = c('ICD10 Code','Number of Cases','Percentage','Description'),
+        digits=2,
+        format.args = list(big.mark = ",")) %>%
+  kable_styling
+
+```
+
+```{r}
+shareNonUCD <- nrow(filter(comorbData,underCond != 'U071'))/nrow(comorbData)
+```
+
+In 2020, `r 100*round(1-shareNonUCD,3)`% of deaths with COVID-19 anywhere on the death certificate, it was listed as the underlying cause of death.
+
+Here is the list of causes of death that the [CDC](https://www.cdc.gov/nchs/nvss/vsrr/covid19/excess_deaths.htm) lists as frequent comorbid conditions with COVID-19 
+
+- Respiratory diseases
+- Influenza and pneumonia (J09–J18)
+- Chronic lower respiratory diseases (J40–J47)
+- Other diseases of the respiratory system (J00–J06, J20–J39, J60–J70, J80–J86, J90–J96, J97–J99, R09.2, U04)
+- Circulatory diseases
+- Hypertensive diseases (I10–I15)
+- Ischemic heart disease (I20–I25)
+- Heart failure (I50)
+- Cerebrovascular diseases (I60–I69)
+- Other disease of the circulatory system (I00–I09, I26–I49, I51, I52, I70–I99)
+- Malignant neoplasms (C00–C97)
+- Alzheimer disease and dementia (G30, G31, F01, F03)
+- Other select causes of death
+- Diabetes (E10–E14)
+- Renal failure (N17–N19)
+- Sepsis (A40–A41)
+
+They largely overlap with those in the table, so we could consider borrowing this list.
+
+
