@@ -38,7 +38,7 @@ set.seed(42)
 
 rm(list=ls())
 
-i_am('R/createMortTable.Rmd')
+i_am('R/createFinalTable.Rmd')
 
 inDir <- here('data','input')
 outDir <- here('data','output')
@@ -67,30 +67,9 @@ finalTable <- finalTable %>%
   summarize(deaths=sum(deaths),
             pop=mean(pop)) %>%
   ungroup() %>%
-  mutate(causeOfDeath = 28,
-         causeOfDeath = factor(
-           causeOfDeath,
-           levels=1:28,
-           labels=c('HIV/AIDS','Other infectious and\nparasitic diseases',
-                     'Liver cancer','Lung cancer',
-                     'Breast, prostate, colorectal,\nand cervical cancer',
-                     'All other cancers','Mental disorders',
-                     'Nervous system, excl. Alzheimer’s','Alzheimer’s disease',
-                     'Hypertensive heart disease',
-                     'Circulatory diseases,\nexcl. Hypertensive heart disease',
-                     'Respiratory diseases\nexcl. Influenza and pneumonia',
-                     'Influenza and pneumonia','Diseases of the digestive system',
-                     'Diabetes',
-                     'Endocrine, nutritional,\nand metabolic diseases excl. Diabetes',
-                     'Diseases of the genitourinary system',
-                     'Perinatal conditions\nand congenital anomalies','Homicide',
-                     'Suicide','Drug overdose','Alcohol-induced','Transport accidents',
-                     'Other external causes','Symptoms, signs,\nand ill-defined conditions',
-                     'COVID-19',
-                     'All other causes',
-                     'Total'))) %>%
+  mutate(majorCauses = 'Total') %>%
   add_row(finalTable) %>%
-  group_by(year,sex,raceEthnicity,foreign,causeOfDeath,age) %>%
+  group_by(year,sex,raceEthnicity,foreign,majorCauses,age) %>%
   summarise(deaths = sum(deaths),
             pop = mean(pop)) %>%
   ungroup()
@@ -109,9 +88,8 @@ finalTable <- finalTable %>%
 
 finalTable %>% arrow::write_feather(here(outDir,'finalTable.feather'))
 finalTable %>% 
-  relocate(year,sex,raceEthnicity,foreign,causeOfDeath,age) %>%
-  arrange(year,sex,raceEthnicity,foreign,causeOfDeath,age) %>%
-  mutate(causeOfDeath = str_replace_all(causeOfDeath,'\n',' ')) %>%
+  relocate(year,sex,raceEthnicity,foreign,majorCauses,age) %>%
+  arrange(year,sex,raceEthnicity,foreign,majorCauses,age) %>%
   write_excel_csv(here(outDir,'finalTable.csv'))
 
 ```

@@ -21,6 +21,8 @@ knitr::opts_chunk$set(
 # Loading necessary packages
 
 library(here)
+library(ggh4x)
+library(patchwork)
 library(tidyverse)
 
 # Set seed for the Rmd
@@ -44,8 +46,15 @@ outDir <- here('data','output')
 ```
 
 ```{r}
-
 finalTable <- arrow::read_feather(here(outDir,'finalTable.feather'))
+```
+
+```{r}
+finalTable <- finalTable %>%
+  mutate(raceEthnicity = factor(raceEthnicity,
+                                labels = c("White","Black",
+                                           "American Indian/Alaska Native",
+                                           "Asian\nPacific Islander","Hispanic")))
 
 ```
 
@@ -56,8 +65,8 @@ We start by visualizing the age-specific death rates by sex, race/ethnicity, and
 ```{r,fig.width=10,fig.height=8}
 
 ASDRPlot <- finalTable %>%
-  filter(causeOfDeath == 'Total',
-         raceEthnicity %in% c('White','Black','Hispanic')) %>%
+  filter(majorCauses == 'Total',
+         raceEthnicity %in% c('White','Black','Asian\nPacific Islander','Hispanic')) %>%
   ggplot() +
   geom_line(mapping = aes(x=as.numeric(age),y=logASDR,linetype=foreign)) +
   scale_x_continuous(breaks=1:11,labels=levels(finalTable$age)[1:11]) +
@@ -65,7 +74,7 @@ ASDRPlot <- finalTable %>%
        x='Age',
        y='log(ASDR)',
        linetype='Place of Birth') +
-  facet_grid(raceEthnicity + sex ~ year) +
+  facet_nested(raceEthnicity + sex ~ year) +
   theme_minimal() +
   theme(legend.position = 'bottom',
         axis.text.x = element_text(angle=45))
@@ -77,16 +86,16 @@ ASDRPlot
 ```{r}
 
 ageDist <- finalTable %>%
-  filter(causeOfDeath=='Total') %>%
+  filter(majorCauses=='Total') %>%
   group_by(age,sex) %>%
   summarise(popShare = sum(pop)) %>%
   ungroup() %>%
   mutate(popShare = popShare/sum(popShare))
 
 ageStdRates <- finalTable %>%
-  filter(raceEthnicity %in% c('White','Black','Hispanic')) %>%
+  filter(raceEthnicity %in% c('White','Black','Asian\nPacific Islander','Hispanic')) %>%
   left_join(ageDist,by=c('age','sex')) %>%
-  group_by(sex,raceEthnicity,foreign,year,causeOfDeath) %>%
+  group_by(sex,raceEthnicity,foreign,year,majorCauses) %>%
   summarise(SDR = sum(ASDR*popShare),
             logSDR = if_else(SDR==0,NA_real_,log(SDR))) %>%
   ungroup()
@@ -94,13 +103,11 @@ ageStdRates <- finalTable %>%
 ```
 
 ```{r}
-
 ageStdRates %>%
-  relocate(year,sex,raceEthnicity,foreign,causeOfDeath) %>%
-  arrange(year,sex,raceEthnicity,foreign,causeOfDeath) %>%
-  mutate(causeOfDeath = str_replace_all(causeOfDeath,'\n',' ')) %>%
+  relocate(year,sex,raceEthnicity,foreign,majorCauses) %>%
+  arrange(year,sex,raceEthnicity,foreign,majorCauses) %>%
+  mutate(majorCauses = str_replace_all(majorCauses,'\n',' ')) %>%
   write_excel_csv(here(outDir,'ageStdRates.csv'))
-
 ```
 
 We now plot age-standardized rates by sex, race/ethnicity, and place of birth. This summary measures obscures difference in age-specific mortality but is helpful in summarizing mortality differences among groups. We use the national age distribution (all groups combined) to standardized the rates.
@@ -108,14 +115,14 @@ We now plot age-standardized rates by sex, race/ethnicity, and place of birth. T
 ```{r}
 
 SDRPlot <- ageStdRates %>%
-  filter(causeOfDeath =='Total') %>%
+  filter(majorCauses =='Total') %>%
   ggplot() +
   geom_line(mapping = aes(x=year,y=SDR,linetype=foreign)) +
   labs(title='Age Standardized Death Rates\nby Sex, Race/Ethnicity, Place of Birth',
        x='',
        y='Age-Standardized Death Rate',
        linetype='Place of Birth') +
-  facet_grid(raceEthnicity ~ sex, scales='free_y',switch = 'y') +
+  facet_nested(raceEthnicity ~ sex, scales='free_y',switch = 'y') +
   theme_minimal() +
   theme(axis.text.x = element_text(angle=45),
         legend.position = 'bottom',
@@ -130,16 +137,15 @@ SDRPlot
 We now visualize age-standardized death rates by sex, race/ethnicity, place of birth, and cause of death. In the graph below we let the y-axis vary across causes of death to make it easier to see the difference between the groups.
 
 ```{r, fig.height=16, fig.width=11}
-
 causeSpecificSDRPlot <- ageStdRates %>%
-  filter(!(causeOfDeath %in% c('Total','COVID-19'))) %>%
+  filter(!(majorCauses %in% c('Total','COVID-19'))) %>%
   ggplot() +
   geom_line(mapping = aes(x=year,y=logSDR,linetype=foreign)) +
   labs(title='Age Standardized Death Rates\nby Sex, Race/Ethnicity, Place of Birth, and Cause of Death',
        x='',
        y='Age-Standardized Death Rate (log)',
        linetype='Place of Birth') +
-  facet_grid(causeOfDeath ~ raceEthnicity + sex, scales='free_y',switch = 'y') +
+  facet_nested(majorCauses ~ raceEthnicity + sex, scales='free_y',switch = 'y') +
   theme_minimal() +
   theme(axis.text.x = element_text(angle=45),
         axis.text.y = element_blank(),
@@ -147,7 +153,6 @@ causeSpecificSDRPlot <- ageStdRates %>%
         strip.text.y.left = element_text(angle = 0))
 
 causeSpecificSDRPlot
-
 ```
 
 We now create the graph once more fixing the y-axis to better visualize the differences across causes of death.
@@ -155,14 +160,14 @@ We now create the graph once more fixing the y-axis to better visualize the diff
 ```{r, fig.height=16, fig.width=11}
 
 causeSpecificSDRPlot <- ageStdRates %>%
-  filter(!(causeOfDeath %in% c('Total','COVID-19'))) %>%
+  filter(!(majorCauses %in% c('Total','COVID-19'))) %>%
   ggplot() +
   geom_line(mapping = aes(x=year,y=logSDR,linetype=foreign)) +
   labs(title='Age Standardized Death Rates\nby Sex, Race/Ethnicity, Place of Birth, and Cause of Death',
        x='',
        y='Age-Standardized Death Rate (log)',
        linetype='Place of Birth') +
-  facet_grid(causeOfDeath ~ raceEthnicity + sex,switch = 'y') +
+  facet_nested(majorCauses ~ raceEthnicity + sex,switch = 'y') +
   theme_minimal() +
   theme(axis.text.x = element_text(angle=45),
         legend.position = 'bottom',
@@ -181,8 +186,8 @@ Here we compare COVID-19 age-specific mortality rates between foreign born and U
 ```{r}
 
 COVIDASDRPlot <- finalTable %>%
-  filter(causeOfDeath == 'COVID-19',
-         raceEthnicity %in% c('White','Black','Hispanic'),
+  filter(majorCauses == 'COVID-19',
+         raceEthnicity %in% c('White','Black','Asian\nPacific Islander','Hispanic'),
          year == 2020) %>%
   ggplot() +
   geom_line(mapping = aes(x=as.numeric(age),y=logASDR,linetype=foreign)) +
@@ -194,17 +199,18 @@ COVIDASDRPlot <- finalTable %>%
   facet_grid(raceEthnicity ~ sex) +
   theme_minimal() +
   theme(legend.position = 'bottom',
-        axis.text.x = element_text(angle=45))
+        axis.text.x = element_text(angle=45),
+        strip.text.y = element_text(angle=0))
 
 COVIDASDRPlot
 
 ```
-To make the comparison easier, we now use age-standardized COVID-19 death rates. WE lose the age detail but can more readily compare overall mortality across groups.
+To make the comparison easier, we now use age-standardized COVID-19 death rates. We lose the age detail but can more readily compare overall mortality across groups.
 
 ```{r, fig.width=5}
 
 COVIDSDRPlot <- ageStdRates %>%
-  filter(causeOfDeath== 'COVID-19',
+  filter(majorCauses== 'COVID-19',
          year == 2020) %>%
   ggplot() +
   geom_point(mapping = aes(x=raceEthnicity,y=SDR,shape=foreign)) +
@@ -219,3 +225,90 @@ COVIDSDRPlot <- ageStdRates %>%
 COVIDSDRPlot
 
 ```
+
+## Decomposing the Native-Foreign Mortality Differential by Cause of Death
+
+Aside from COVID, what other causes are responsible for the difference in age standardized mortality between native born and foreign born? In the following figure, we look at differences in age-standardized, cause-specific mortality between native born and foreign born for the period 2017-2020 (panel A). We can see that native born have higher mortality from most causes with the exception of circulatory diseases for whites. However, COVID-19 mortality was higher among foreign born for all groups. Panel B takes a difference-in-differences approach and looks at changes in the difference of cause-specific, age standardized mortality between native and foreign born comparing the pre-pandemic average (2017-2019) with 2020. It reveals that while COVID-19 was the only cause of death with a large net disadvantage for foreign borns, their advantage in most other causes of death declined, thus contributing to a shrinking overall mortality advantage.
+
+```{r,fig.width=8,fig.height=10}
+contributionsPlot <- ageStdRates %>%
+  select(-logSDR) %>%
+  pivot_wider(names_from = foreign, values_from = SDR) %>%
+  rename(SDRForeign = 'Foreign Born',
+         SDRNative = 'US Born') %>%
+  mutate(SDRDiff = SDRNative - SDRForeign) %>%
+  filter(majorCauses != 'Total') %>%
+  ggplot() +
+  geom_col(mapping=aes(x=year,y=SDRDiff,fill=majorCauses),
+           color='black',size=0.1) +
+  scale_fill_viridis_d() + 
+  facet_nested(~raceEthnicity+sex) +
+  labs(x='',
+       y='Difference in Age-Standardized Mortality Rate between Native and Foreign Born',
+       fill='Cause of Death') +
+  theme_minimal() +
+  theme(legend.position = 'bottom',
+        axis.text.x = element_text(angle=90),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank()) +
+  guides(fill=guide_legend(nrow = 3))
+```
+
+```{r,fig.width=8,fig.height=5}
+diffInDiffPlot <- ageStdRates %>%
+  select(-logSDR) %>%
+  mutate(period = if_else(year!=2020,'PrePandemic','2020')) %>%
+  select(-year) %>%
+  group_by(sex,raceEthnicity,foreign,majorCauses,period) %>%
+  summarise(SDR = mean(SDR)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = foreign, values_from = SDR) %>%
+  rename(SDRForeign = 'Foreign Born',
+         SDRNative = 'US Born') %>%
+  pivot_wider(names_from = period, values_from = SDRForeign:SDRNative) %>%
+  mutate(SDRDiffInDiff = (SDRForeign_PrePandemic - SDRForeign_2020) - (SDRNative_PrePandemic - SDRNative_2020)) %>%
+  filter(majorCauses != 'Total') %>%
+  ggplot() +
+  geom_col(mapping=aes(y=sex,x=SDRDiffInDiff,fill=majorCauses),
+           color='black',size=0.1) +
+  scale_fill_viridis_d() + 
+  facet_nested(raceEthnicity~1) +
+  labs(x='',
+       y='Changes in the Difference of\nAge-Standardized Mortality Rates\nbetween Native and Foreign Borns',
+       fill='Cause of Death') +
+  theme_minimal() +
+  theme(legend.position = 'bottom',
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        strip.text.x = element_blank(),
+        strip.text.y = element_text(angle=0)) +
+  guides(fill=guide_legend(ncol = 3))
+```
+
+```{r,fig.height=12,fig.width=8}
+contributionsPlot/diffInDiffPlot + 
+  plot_layout(heights=c(8, 2),guides = 'collect') +
+  plot_annotation(tag_levels = 'A') &
+  theme(legend.position = 'bottom')
+```
+
+Here is the list of ICD10 codes in each group.
+
+* Respiratory diseases
+    * Influenza and pneumonia (J09–J18)
+    * Chronic lower respiratory diseases (J40–J47)
+    * Other diseases of the respiratory system (J00–J06, J20–J39, J60–J70, J80–J86, J90–J96, J97–J99, R09.2, U04)
+* Circulatory diseases
+    * Hypertensive diseases (I10–I15)
+    * Ischemic heart disease (I20–I25)
+    * Heart failure (I50)
+    * Cerebrovascular diseases (I60–I69)
+    * Other disease of the circulatory system (I00–I09, I26–I49, I51, I52, I70–I99)
+* Malignant neoplasms (C00–C97)
+* Alzheimer disease and dementia (G30, G31, F01, F03)
+* Other select causes of death
+    * Diabetes (E10–E14)
+    * Renal failure (N17–N19)
+    * Sepsis (A40–A41)
+
+
