@@ -1,0 +1,56 @@
+majorCauses,raceEthnicity,foreign,cases,prop
+Respiratory diseases,Hispanic,Foreign-Born,34454,29.267753992524636
+Respiratory diseases,Asian,Foreign-Born,9356,27.99353719107175
+Respiratory diseases,Hispanic,US-Born,16380,27.87183719307798
+Respiratory diseases,Asian,US-Born,917,27.446872193953908
+Respiratory diseases,Black,Foreign-Born,5529,27.39705663743125
+Respiratory diseases,Black,US-Born,36295,27.1809542353461
+Respiratory diseases,White,Foreign-Born,11958,27.14704079547776
+Respiratory diseases,White,US-Born,137509,26.880064116974385
+Circulatory diseases,Black,Foreign-Born,3544,17.5610722957237
+Circulatory diseases,Asian,Foreign-Born,5829,17.440607982765844
+Circulatory diseases,Asian,US-Born,560,16.76144866806345
+Circulatory diseases,Hispanic,Foreign-Born,19708,16.74142031940197
+Circulatory diseases,White,Foreign-Born,7261,16.483915639401577
+Circulatory diseases,Black,US-Born,22006,16.480068298747106
+Circulatory diseases,Hispanic,US-Born,9476,16.12414708434719
+Circulatory diseases,White,US-Born,77742,15.196895800142698
+Diabetes,Hispanic,US-Born,5167,8.792050230563733
+Diabetes,Hispanic,Foreign-Born,10076,8.559293238192321
+Diabetes,Black,Foreign-Born,1697,8.408899459888014
+Diabetes,Black,US-Born,9683,7.251499651766256
+Diabetes,Asian,Foreign-Born,2411,7.213811262042966
+Alzheimer's disease and dementia,White,US-Born,35806,6.999306051039457
+Diabetes,Asian,US-Born,230,6.884166417240348
+Alzheimer's disease and dementia,White,Foreign-Born,2743,6.227156121591864
+Diabetes,White,Foreign-Born,2213,5.023950600467661
+Renal failure,Black,US-Born,6258,4.686552186383686
+Diabetes,White,US-Born,23894,4.670765200903111
+Renal failure,Asian,US-Born,143,4.280155642023346
+Renal failure,Hispanic,US-Born,2366,4.025932039000153
+Renal failure,Hispanic,Foreign-Born,4498,3.8209310227658855
+Alzheimer's disease and dementia,Asian,Foreign-Born,1257,3.7609957513015377
+Alzheimer's disease and dementia,Asian,US-Born,125,3.7413947919784496
+Renal failure,Asian,Foreign-Born,1203,3.5994255280952667
+Alzheimer's disease and dementia,Black,US-Born,4538,3.3984617804105417
+Heart failure,White,US-Born,16523,3.2298925845200515
+Renal failure,Black,Foreign-Born,642,3.181210049056043
+Renal failure,White,US-Born,15832,3.094816885439778
+Alzheimer's disease and dementia,Hispanic,US-Born,1806,3.0730487161598803
+Renal failure,White,Foreign-Born,1272,2.887693250698086
+Heart failure,White,Foreign-Born,1244,2.8241276759971847
+Alzheimer's disease and dementia,Black,Foreign-Born,561,2.7798424260442993
+Heart failure,Black,US-Born,3515,2.6323475447648863
+Heart failure,Asian,US-Born,73,2.1849745585154143
+Alzheimer's disease and dementia,Hispanic,Foreign-Born,2370,2.0132517838939856
+Heart failure,Hispanic,US-Born,1117,1.9006619135939016
+Malignant Neoplasm,White,US-Born,8400,1.6420200756502106
+Heart failure,Asian,Foreign-Born,529,1.5827897791873615
+Malignant Neoplasm,White,Foreign-Born,635,1.4415764262525823
+Malignant Neoplasm,Black,US-Born,1882,1.4094105488613131
+Heart failure,Black,Foreign-Born,279,1.3824884792626728
+Malignant Neoplasm,Asian,US-Born,45,1.346902125112242
+Heart failure,Hispanic,Foreign-Born,1494,1.269113149847095
+Malignant Neoplasm,Black,Foreign-Born,241,1.1941925573559287
+Malignant Neoplasm,Hispanic,US-Born,623,1.0600826966598036
+Malignant Neoplasm,Asian,Foreign-Born,347,1.0382382861588175

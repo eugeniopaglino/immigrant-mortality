@@ -1,0 +1,493 @@
+---
+title: "Sample and Summary Tables"
+author: "Eugenio Paglino"
+output: html_document
+---
+
+```{r, echo=F, include=F}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'
+)
+```
+
+```{r}
+# Loading necessary packages
+library(here)
+library(gt)
+library(glue)
+library(tidyverse)
+# Set seed for the Rmd
+set.seed(42)
+```
+
+```{r, echo=FALSE, message=F, warning=F}
+# Do not rely on this to completely clean your environment
+# Better to do a full restart of R before running
+rm(list=ls())
+
+i_am('R/sampleAndSummaryTables.Rmd')
+
+inDir <- here('data','input')
+outDir <- here('data','output')
+figuresDir <- here('figures')
+tablesDir <- here('tables')
+```
+
+```{r}
+finalTable <- arrow::read_feather(here(outDir,'finalTable.feather'))
+```
+
+```{r}
+finalTable <- finalTable %>%
+  mutate(raceEthnicity = factor(raceEthnicity,
+                                levels=c('White','Hispanic',
+                                         'Black','Asian',
+                                         'American Indian/Alaska Native')),
+         raceEthnicityShort = case_when(raceEthnicity == 'White' ~ 'W',
+                                        raceEthnicity == 'Black' ~ 'B',
+                                        raceEthnicity == 'American Indian/Alaska Native' ~ 'N',
+                                        raceEthnicity == 'Asian' ~ 'A',
+                                        raceEthnicity == 'Hispanic' ~ 'H'),
+         foreignShort = case_when(foreign == 'US-Born' ~ 'N',
+                                  foreign == 'Foreign-Born' ~ 'F'),
+         startAge = as.integer(str_extract(age,'\\d{2}'))) %>%
+  filter(raceEthnicityShort %in% c('W','B','A','H'),
+         year!=2021)
+```
+
+```{r}
+exampleData <- finalTable %>%
+  filter(majorCauses == 'Total',
+         startAge>=25) %>%
+  mutate(period = if_else(year<2020,'2017-2019','2020')) %>%
+  group_by(sex,raceEthnicity,foreign,period,majorCauses,age) %>%
+  summarise(pop = sum(pop),
+            deaths = sum(deaths)) %>%
+  ungroup() %>%
+  mutate(ASDR = (deaths/pop)*100000)
+
+exampleData %>% write_csv(here(outDir,'exampleData.csv'))
+```
+
+```{r}
+causeOfDeathTable <- tribble(
+  ~`Cause of Death`, ~`ICD-10 Codes`,
+  'Covid-19','U07.1',
+  'Respiratory diseases','J00–J06, J09-J18, J20-J47, J60-J70, J80-J86, J90-J99, R09.2, U04',
+  'Circulatory diseases','I00–I15, I20-I52, I60-I99',
+  'Malignant neoplasms','C00-C97',
+  'Alzheimer’s disease and dementia','G30-G31, F01-F03',
+  'Diabetes','E10–E14',
+  'External courses','V01-Y89',
+  'All other causes','All codes not listed above'
+)
+```
+
+```{r}
+causeOfDeathTable %>% 
+  gt() %>%
+  gtsave(here(figuresDir,'ICDCodesTable.png'),zoom=4)
+```
+
+```{r}
+sampleData <- exampleData %>%
+  mutate(age = case_when(age %in% c('25-34','35-44','45-54','55-64') ~ '25-64',
+                         age %in% c('65-74','75-84','85+') ~ '65+'),
+         foreignShort = case_when(foreign == 'US-Born' ~ 'N',
+                                  foreign == 'Foreign-Born' ~ 'F',
+                                  foreign == 'Total' ~ 'T')) %>%
+  
+  group_by(sex,raceEthnicity,foreignShort,period,age) %>%
+  summarise(pop=sum(pop),
+            deaths=sum(deaths)) %>%
+  ungroup() %>%
+  group_by(sex,raceEthnicity,period,age) %>%
+  mutate(popProp=pop/sum(pop),
+         deathsProp=deaths/sum(deaths)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = c(foreignShort,period),values_from = c(pop,popProp,deaths,deathsProp)) %>%
+  mutate()
+```
+
+```{r}
+create_sample_table <- function(data,thisSex) {
+  summaryTable <- data %>%
+    filter(sex==thisSex) %>%
+    group_by(raceEthnicity) %>%
+    select(raceEthnicity,
+           age,
+           `pop_N_2017-2019`,
+           `pop_F_2017-2019`,
+           `popProp_F_2017-2019`,
+           `deaths_N_2017-2019`,
+           `deaths_F_2017-2019`,
+           `deathsProp_F_2017-2019`,
+           `pop_N_2020`,
+           `pop_F_2020`,
+           `popProp_F_2020`,
+           `deaths_N_2020`,
+           `deaths_F_2020`,
+           `deathsProp_F_2020`) %>%
+    arrange(raceEthnicity) %>%
+    gt() %>%
+    cols_label(
+      raceEthnicity = 'Race/Ethnicity',
+      age = 'Age',
+     `pop_N_2017-2019`='US-Born',
+     `pop_F_2017-2019`='Foreign-Born',
+     `popProp_F_2017-2019`='Proportion Foreign',
+     `deaths_N_2017-2019`='US-Born',
+     `deaths_F_2017-2019`='Foreign-Born',
+     `deathsProp_F_2017-2019`='Proportion Foreign',
+     `pop_N_2020`='US-Born',
+     `pop_F_2020`='Foreign-Born',
+     `popProp_F_2020`='Proportion Foreign',
+     `deaths_N_2020`='US-Born',
+     `deaths_F_2020`='Foreign-Born',
+     `deathsProp_F_2020`='Proportion Foreign') %>%
+    fmt_number(
+      columns = contains('deaths_') | contains('pop_'),
+      decimals = 0
+    ) %>%
+    fmt_number(
+      columns = contains('Prop'),
+      decimals = 3
+    ) %>%
+    tab_spanner(
+      label = 'Person-Years 2017-2019',
+      columns = contains('2017-2019') & contains('pop')
+    ) %>%
+    tab_spanner(
+      label = 'Person-Years 2020',
+      columns = contains('2020') & contains('pop')
+    ) %>%
+    tab_spanner(
+      label = 'Deaths 2017-2019',
+      columns = contains('2017-2019') & contains('deaths')
+    ) %>%
+    tab_spanner(
+      label = 'Deaths 2020',
+      columns = contains('2020') & contains('deaths')
+    ) %>%
+    cols_width(age ~ px(80),
+               contains('pop_') ~ px(100),
+               contains('deaths_') ~ px(85),
+               contains('Prop') ~ px(80)) %>%
+    tab_options(
+      row_group.font.weight = 'bold'
+    )
+  
+  return(summaryTable)
+}
+```
+
+```{r}
+sampleTableMales <- create_sample_table(sampleData,'Male')
+sampleTableFemales <- create_sample_table(sampleData,'Female')
+```
+
+```{r}
+gtsave(sampleTableMales,here(figuresDir,'sampleTableMales.png'),
+       vwidth = 1500,vheight = 700,zoom=4)
+gtsave(sampleTableFemales,here(figuresDir,'sampleTableFemales.png'),
+       vwidth = 1500,vheight = 700,zoom=4)
+```
+
+```{r}
+build_summary_table_data <- function(ageStdRatesDFs,thisSex) {
+
+  summaryTableData <- bind_rows(ageStdRatesDFs)
+  summaryTableData <- create_summary_data(summaryTableData,thisSex) %>%
+
+  ratioRows <- summaryTableData %>%
+    group_by(period,raceEthnicity,majorCauses,age,sex) %>%
+    summarise(ASCDR = ASCDR[2]/ASCDR[1]) %>%
+    ungroup() %>%
+    mutate(foreignShort='R')
+  
+  summaryTableData <- summaryTableData %>%
+    bind_rows(ratioRows) %>%
+    select(age,sex,raceEthnicity,period,foreignShort,majorCauses,ASCDR) %>%
+    pivot_wider(values_from = ASCDR,names_from = period:majorCauses) %>%
+    select(age,sex,raceEthnicity,ends_with('Total') | starts_with('2020')) %>%
+    mutate(age = case_when(age=='25-100' ~ '25+',
+                           age=='25-65' ~ '25-64',
+                           age=='65-100' ~ '65+'))
+
+  return(summaryTableData)
+}
+```
+
+```{r}
+# Define functions to create age-standardized rates
+ageDist <- finalTable %>%
+  filter(majorCauses=='Total') %>%
+  group_by(age) %>%
+  summarise(ageGroupPop = sum(pop)) %>%
+  ungroup() %>%
+  mutate(ageGroupPopShare = ageGroupPop/sum(ageGroupPop))
+
+ageDist %>% write_excel_csv(here(outDir,'standardPop.csv'))
+
+nax <- tibble(age=c('<1','1-4','5-14','15-24','25-34','35-44',
+                    '45-54','55-64','65-74','75-84','85+'),
+              n=c(1,4,rep(10,8),NA),
+              a=c(0.09,0.41,rep(0.5,8),NA),
+              nax=n*a)
+
+compute_age_std_rates <- function(ageSpecificRates,ageDist,nax,start,end) {
+  
+  ageSpecificRatesTotal <- ageSpecificRates %>%
+    group_by(year,sex,raceEthnicity,majorCauses,age,startAge,
+             raceEthnicityShort) %>%
+    summarize(pop = sum(pop),
+              deaths = sum(deaths)) %>%
+    ungroup() %>%
+    mutate(foreign='Total')
+  
+  ageSpecificRatesFull <- finalTable %>%
+    select(-c(ASDR,logASDR,foreignShort)) %>%
+    add_row(ageSpecificRatesTotal) %>%
+    mutate(foreign = factor(foreign,levels=c('Foreign-Born','US-Born','Total')))
+  
+  ageStdRates <- ageSpecificRatesFull %>%
+    filter(startAge >= start & startAge < end) %>%
+    mutate(period = if_else(year<2020,'2017-2019','2020')) %>%
+    group_by(sex,raceEthnicity,foreign,period,majorCauses,age) %>%
+    summarise(pop = sum(pop),
+              deaths = sum(deaths)) %>%
+    ungroup() %>%
+    left_join(nax,by='age') %>%
+    mutate(ASDR = (deaths/pop),
+           nqx = (n*ASDR)/(1+(n-nax)*ASDR),
+           nqx = if_else(age=='85+',1,nqx)) %>%
+    left_join(ageDist,by=c('age')) %>%
+    group_by(sex,raceEthnicity,foreign,period,majorCauses) %>%
+    summarise(ASCDR.SD = sqrt(sum((ageGroupPopShare^2)*((ASDR/pop)*(1-nqx)))),
+              ASCDR = sum(ASDR*ageGroupPopShare)/sum(ageGroupPopShare),
+              pop = sum(pop),
+              deaths = sum(deaths)) %>%
+    ungroup() %>%
+    mutate(age= glue('{start}-{end}'),
+           ASCDR=ASCDR*100000,
+           logASCDR = if_else(ASCDR==0,NA_real_,log(ASCDR)),
+           ASCDR.SD=ASCDR.SD*100000,
+           coefOfVar = (ASCDR.SD/ASCDR)*100)
+  
+  return(ageStdRates)
+}
+
+create_age_std_table <- function(ageStdRates,path) {
+  
+  ageStdRates %>%
+    relocate(period,sex,raceEthnicity,foreign,majorCauses,age,deaths,pop,ASCDR,logASCDR,ASCDR.SD,coefOfVar) %>%
+    arrange(period,sex,raceEthnicity,foreign,majorCauses) %>%
+    mutate(majorCauses = str_replace_all(majorCauses,'\n',' ')) %>%
+    write_excel_csv(path)
+}
+```
+
+```{r}
+ageSpecificRatesTotal <- finalTable %>%
+  group_by(year,sex,raceEthnicity,majorCauses,age,startAge,
+           raceEthnicityShort) %>%
+  summarize(pop = sum(pop),
+            deaths = sum(deaths)) %>%
+  ungroup() %>%
+  mutate(foreign='Total')
+
+ageSpecificRatesFull <- finalTable %>%
+  select(-c(ASDR,logASDR,foreignShort)) %>%
+  add_row(ageSpecificRatesTotal) %>%
+  mutate(foreign = factor(foreign,levels=c('Foreign-Born','US-Born','Total')))
+
+ageStdRates <- ageSpecificRatesFull %>%
+  filter(startAge >= 25 & startAge < 100) %>%
+  mutate(period = if_else(year<2020,'2017-2019','2020')) %>%
+  group_by(sex,raceEthnicity,foreign,period,majorCauses,age) %>%
+  summarise(pop = sum(pop),
+            deaths = sum(deaths)) %>%
+  ungroup() %>%
+  left_join(nax,by='age') %>%
+  mutate(ASDR = (deaths/pop),
+         nqx = (n*ASDR)/(1+(n-nax)*ASDR),
+         nqx = if_else(age=='85+',1,nqx)) %>%
+  left_join(ageDist,by=c('age')) %>%
+  group_by(sex,raceEthnicity,foreign,period,majorCauses) %>%
+  summarise(ASCDR.SD = sqrt(sum((ageGroupPopShare^2)*((ASDR/pop)*(1-nqx)))),
+            ASCDR = sum(ASDR*ageGroupPopShare)/sum(ageGroupPopShare),
+            pop = sum(pop),
+            deaths = sum(deaths)) %>%
+  ungroup() %>%
+  mutate(age= glue('{25}-{100}'),
+         ASCDR=ASCDR*100000,
+         logASCDR = if_else(ASCDR==0,NA_real_,log(ASCDR)),
+         ASCDR.SD=ASCDR.SD*100000,
+         coefOfVar = (ASCDR.SD/ASCDR)*100)
+```
+
+
+```{r}
+create_summary_data <- function(data,thisSex) {
+  
+  diffTrendsData <- data %>%
+    filter(sex==thisSex) %>%
+    mutate(majorCauses = factor(case_when(majorCauses == 'Total' ~ 'Total',
+                                          majorCauses == 'COVID-19' ~ 'COVID-19',
+                                          TRUE ~ 'Non-COVID'),
+                                levels = c('Total','Non-COVID','COVID-19'))) %>%
+    group_by(sex,age,raceEthnicity,foreign,majorCauses,period) %>%
+    summarise(ASCDR=sum(ASCDR)) %>% 
+    ungroup() %>%
+    filter(!(period=='2017-2019' & majorCauses %in% c('Non-COVID','COVID-19')))
+  
+  return(diffTrendsData)
+}
+```
+
+```{r}
+build_summary_table_data <- function(ageStdRatesDFs,thisSex) {
+
+  summaryTableData <- bind_rows(ageStdRatesDFs)
+  summaryTableData <- create_summary_data(summaryTableData,thisSex) %>%
+    mutate(foreignShort = case_when(foreign == 'US-Born' ~ 'N',
+                                    foreign == 'Foreign-Born' ~ 'F',
+                                    foreign == 'Total' ~ 'T'))
+  
+  ratioRows <- summaryTableData %>%
+    group_by(period,raceEthnicity,majorCauses,age,sex) %>%
+    summarise(ASCDR = ASCDR[2]/ASCDR[1]) %>%
+    ungroup() %>%
+    mutate(foreignShort='R')
+  
+  summaryTableData <- summaryTableData %>%
+    bind_rows(ratioRows) %>%
+    select(age,sex,raceEthnicity,period,foreignShort,majorCauses,ASCDR) %>%
+    pivot_wider(values_from = ASCDR,names_from = period:majorCauses) %>%
+    select(age,sex,raceEthnicity,ends_with('Total') | starts_with('2020')) %>%
+    mutate(age = case_when(age=='25-100' ~ '25+',
+                           age=='25-65' ~ '25-64',
+                           age=='65-100' ~ '65+'))
+
+  return(summaryTableData)
+}
+```
+
+```{r}
+create_summary_table <- function(data,thisSex) {
+  summaryTable <- data %>%
+    group_by(raceEthnicity) %>%
+    select(raceEthnicity,
+           age,
+           `2017-2019_T_Total`,
+           `2017-2019_N_Total`,
+           `2017-2019_F_Total`,
+           `2017-2019_R_Total`,
+           `2020_T_Non-COVID`,
+           `2020_N_Non-COVID`,
+           `2020_F_Non-COVID`,
+           `2020_R_Non-COVID`,
+           `2020_T_COVID-19`,
+           `2020_N_COVID-19`,
+           `2020_F_COVID-19`,
+           `2020_R_COVID-19`,
+           `2020_T_Total`,
+           `2020_N_Total`,
+           `2020_F_Total`,
+           `2020_R_Total`
+            ) %>%
+    arrange(raceEthnicity) %>%
+    gt() %>%
+    cols_label(
+      raceEthnicity = 'Race/Ethnicity',
+      age = 'Age',
+      `2017-2019_T_Total` = 'Total',
+      `2017-2019_F_Total` = 'Foreign-Born',
+      `2017-2019_N_Total` = 'US-Born',
+      `2017-2019_R_Total` = 'Ratio',
+      `2020_T_Non-COVID` = 'Total',
+      `2020_F_Non-COVID` = 'Foreign-Born',
+      `2020_N_Non-COVID` = 'US-Born',
+      `2020_R_Non-COVID` = 'Ratio',
+      `2020_T_COVID-19` = 'Total',
+      `2020_F_COVID-19` = 'Foreign-Born',
+      `2020_N_COVID-19` = 'US-Born',
+      `2020_R_COVID-19` = 'Ratio',
+      `2020_T_Total` = 'Total',
+      `2020_F_Total` = 'Foreign-Born',
+      `2020_N_Total` = 'US-Born',
+      `2020_R_Total` = 'Ratio') %>%
+    fmt_number(
+      columns = contains('_T_') | contains('_F_') | contains('_N_'),
+      decimals = 1
+    ) %>%
+    fmt_number(
+      columns = contains('_R_'),
+      decimals = 3
+    ) %>%
+    tab_spanner(
+      label = 'All Cause 2017-2019',
+      columns = `2017-2019_T_Total`:`2017-2019_R_Total`
+    ) %>%
+    tab_spanner(
+      label = 'Non-COVID 2020',
+      columns = `2020_T_Non-COVID`:`2020_R_Non-COVID`
+    ) %>%
+    tab_spanner(
+      label = 'COVID-19 2020',
+      columns = `2020_T_COVID-19`:`2020_R_COVID-19`
+    ) %>%
+    tab_spanner(
+      label = 'All Cause 2020',
+      columns = `2020_T_Total`:`2020_R_Total`
+    ) %>%
+    cols_width(age ~ px(80),
+               everything() ~ px(65)) %>%
+    tab_options(
+      row_group.font.weight = 'bold'
+    )
+  
+  return(summaryTable)
+}
+```
+
+```{r}
+ageStdRates <- compute_age_std_rates(finalTable,ageDist,nax,25,100)
+ageStdRatesBelow65 <- compute_age_std_rates(finalTable,ageDist,nax,25,65)
+ageStdRatesAbove65 <- compute_age_std_rates(finalTable,ageDist,nax,65,100)
+```
+
+```{r}
+ageStdRatesDFs <- list(ageStdRates,ageStdRatesBelow65,
+                       ageStdRatesAbove65)
+summaryTableDataMales <- build_summary_table_data(ageStdRatesDFs,'Male')
+summaryTableDataFemales <- build_summary_table_data(ageStdRatesDFs,'Female')
+summaryTableDataMales %>% write_csv(here(outDir,'summaryTableDataMales.csv'))
+summaryTableDataFemales %>% write_csv(here(outDir,'summaryTableDataFemales.csv'))
+```
+
+```{r}
+summaryTableMales <- create_summary_table(summaryTableDataMales,'Male')
+summaryTableFemales <- create_summary_table(summaryTableDataFemales,'Female')
+```
+
+```{r}
+summaryTableMales
+summaryTableFemales
+```
+
+```{r}
+gtsave(summaryTableMales,here(figuresDir,'summaryTableMales.png'),
+       vwidth = 1400,vheight = 700, zoom=4)
+gtsave(summaryTableFemales,here(figuresDir,'summaryTableFemales.png'),
+       vwidth = 1400,vheight = 700, zoom=4)
+```
+
+```{r}
+create_age_std_table(ageStdRates,here(outDir,'ageStdRates.csv'))
+create_age_std_table(ageStdRatesBelow65,here(outDir,'ageStdRatesBelow65.csv'))
+create_age_std_table(ageStdRatesAbove65,here(outDir,'ageStdRatesAbove65.csv'))
+```

@@ -1,0 +1,194 @@
+---
+title: "Mortality Ratios Plots and Tables"
+author: "Eugenio Paglino"
+output: html_document
+---
+
+```{r, echo=F, include=F}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'
+)
+```
+
+```{r}
+# Loading necessary packages
+library(here)
+library(patchwork)
+library(gt)
+library(tidyverse)
+# Set seed for the Rmd
+set.seed(42)
+```
+
+```{r, echo=FALSE, message=F, warning=F}
+# Do not rely on this to completely clean your environment
+# Better to do a full restart of R before running
+rm(list=ls())
+
+i_am('R/createMortTable.Rmd')
+
+inDir <- here('data','input')
+outDir <- here('data','output')
+figuresDir <- here('figures')
+tablesDir <- here('tables')
+```
+
+```{r}
+ratio_trends_data <- function(data,thisSex) {
+  
+  ratioData <- data %>%
+    filter(majorCauses=='Total',
+           sex==thisSex) %>%
+    select(-logASCDR) %>%
+    group_by(sex,raceEthnicity,foreign,majorCauses,period) %>%
+    summarise(ASCDR = mean(ASCDR)) %>%
+    ungroup() %>%  
+    pivot_wider(names_from = raceEthnicity,values_from = ASCDR) %>%
+    mutate(White = if_else(foreign=='Total',White,NA_real_),
+           foreign = fct_relevel(foreign,'Total','US-Born','Foreign-Born')) %>%
+    arrange(period,sex,foreign) %>%
+    fill(White) %>%
+    mutate(ratioHispanic = Hispanic/White,
+           ratioBlack = Black/White,
+           ratioAsian = Asian/White) %>%
+    select(-c(White:Asian)) %>%
+    pivot_longer(ratioHispanic:ratioAsian,names_to = 'comparison',values_to = 'ratio') %>%
+    mutate(comparison = factor(case_when(comparison == 'ratioHispanic' ~ 'Hispanic',
+                                         comparison == 'ratioBlack' ~ 'Black',
+                                         comparison == 'ratioAsian' ~ 'Asian'),
+                               levels=c('Hispanic','Black','Asian')))
+  
+  return(ratioData)
+}
+```
+
+```{r}
+ratio_trends_plot <- function(data,thisSex) {
+
+  linesData <- data %>%
+    pivot_wider(names_from = period, values_from = ratio)
+  
+  ratioTrendsPlot <- data %>%
+    ggplot() +
+    geom_vline(xintercept = 1) +
+    geom_segment(data = linesData,
+                 mapping = aes(y=fct_relevel(foreign,'Total','US-Born','Foreign-Born'),
+                               yend=fct_relevel(foreign,'Total','US-Born','Foreign-Born'),
+                               x=`2017-2019`,xend=`2020`),
+                 linewidth=0.3) +
+    geom_point(mapping = aes(y=fct_relevel(foreign,'Total','US-Born','Foreign-Born'),
+                             x=ratio,shape=period,fill=period), size=3) +
+    scale_shape_manual(values=c(22,21)) +
+    scale_fill_manual(values=c('white','gray50')) +
+    scale_x_continuous(limits = c(0.5,1.5),breaks=c(0.75,1,1.25)) +
+    labs(title=paste0(thisSex,'s'),
+         x='',
+         y='Ratio of Age-Standardized Death Rates',
+         shape='Period',
+         fill='Period') +
+    facet_wrap(~ comparison, nrow = 1) +
+    theme_minimal() +
+    theme(legend.position = 'bottom',
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.spacing.y = unit(2,'lines'),
+          strip.text.y.left = element_text(angle=0,size=13),
+          strip.placement = 'outer',
+          strip.background.x = element_rect(fill='white'))
+  
+  return(ratioTrendsPlot)
+}
+```
+
+```{r}
+create_ratio_trends_table <- function(dataMales,dataFemales) {
+  
+  data <- dataMales %>%
+    add_row(dataFemales)
+  
+  data <- data %>%
+    pivot_wider(names_from = c(period,sex), values_from = ratio)
+  
+  summaryTable <- data %>%
+    group_by(comparison) %>%
+    select(comparison,
+           foreign,
+           `2017-2019_Male`,
+           `2020_Male`,
+           `2017-2019_Female`,
+           `2020_Female`,
+            ) %>%
+    arrange(comparison) %>%
+    gt() %>%
+    cols_label(
+      foreign = '',
+      comparison = 'Race/Ethnicity',
+      `2017-2019_Male` = '2017-2019',
+      `2020_Male` = '2020',
+      `2017-2019_Female` = '2017-2019',
+      `2020_Female` = '2020') %>%
+    fmt_number(
+      columns = `2017-2019_Male`:`2020_Female`,
+      decimals = 3
+    ) %>%
+    tab_spanner(
+      label = 'Ratio of Age-Standardized Death Rates (Ref. Total White Population)',
+      columns = `2017-2019_Male`:`2020_Female`,
+      level = 2
+    ) %>%
+    tab_spanner(
+      label = 'Males',
+      columns = `2017-2019_Male`:`2020_Male`,
+      level = 1
+    ) %>%
+    tab_spanner(
+      label = 'Females',
+      columns = `2017-2019_Female`:`2020_Female`,
+      level = 1
+    ) %>%
+    tab_options(
+      row_group.font.weight = 'bold'
+    )
+  
+  return(summaryTable)
+}
+```
+
+```{r}
+ageStdRates <- read_csv(here(outDir,'ageStdRates.csv'))
+```
+
+## Race/Ethnicity ASCDR-Ratios by Period, Sex, and Place of Birth
+
+```{r}
+ratioTrendsMalesData <- ratio_trends_data(ageStdRates,'Male')
+ratioTrendsFemalesData <- ratio_trends_data(ageStdRates,'Female')
+ratioTrendsMalesPlot <- ratio_trends_plot(ratioTrendsMalesData,'Male')
+ratioTrendsFemalesPlot <- ratio_trends_plot(ratioTrendsFemalesData,'Female')
+```
+
+```{r, fig.width=8, fig.height=8}
+combinedRatioPlots <- (ratioTrendsMalesPlot / ratioTrendsFemalesPlot) +
+  plot_layout(guides='collect') +
+  plot_annotation(tag_level = 'A') &
+  theme(legend.position = 'bottom')
+
+combinedRatioPlots
+```
+
+```{r}
+pdf(here(figuresDir,'ratioTrendsPlot.pdf'), width = 8, height = 8)
+combinedRatioPlots
+dev.off()
+```
+
+```{r}
+ratioTrendsTable <- create_ratio_trends_table(ratioTrendsMalesData,ratioTrendsFemalesData)
+```
+
+```{r}
+gtsave(ratioTrendsTable,here(figuresDir,'ratioTrendsTable.png'), zoom=4)
+```

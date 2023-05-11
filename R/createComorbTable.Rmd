@@ -23,37 +23,31 @@ library(here)
 library(glue)
 library(kableExtra)
 library(tidyverse)
+library(gt)
 
 # Set seed for the Rmd
-
 set.seed(42)
-
 ```
 
 ```{r}
-
 # Do not rely on this to completely clean your environment
 # Better to do a full restart of R before running
 
 rm(list=ls())
 
-i_am('R/createMortTable.Rmd')
+i_am('R/createComorbTable.Rmd')
 
 inDir <- here('data','input')
 outDir <- here('data','output')
-
 ```
 
 ```{r}
-
-ICD10Codebook <- read_fwf(here(inDir,'ICD10CMCodes','ICD10CMCodesAll.txt'),
+ICDCodebook <- read_fwf(here(inDir,'ICD10CMCodes','ICD10CMCodesAll.txt'),
                           col_positions = fwf_cols(ICDCode=c(7,13),
                                                    label=c(78,NA)))
-
 ```
 
 ```{r}
-
 read.mort.data <- function(file) {
   
   mortData <- read_fwf(file,
@@ -96,71 +90,202 @@ combine.mort.data <- function(files) {
 ```
 
 ```{r}
-
 files <- sapply(2020,function(x) here(inDir,glue('mort{x}'),glue('MULT{x}USAllCnty.txt')))
 
 mortData <- combine.mort.data(files)
-
 ```
 
 ```{r}
-
 comorbData <- mortData %>%
-  filter((underCond == 'U071' | str_detect(contrConds,'U071'))) %>%
+  filter((underCond == 'U071')) %>%
   mutate(contrCondsMain = str_match_all(contrConds,'[:alpha:]{1}[:digit:]{2}'),
          contrCondsMain = sapply(contrCondsMain,
                                  function(x) paste(x,collapse=' ')))
+```
 
+```{r}
+comorbData <- comorbData %>%
+  mutate(sex = factor(case_when(sex == 'M' ~ 1,
+                                sex == 'F' ~ 2),
+                      levels=c(1,2),
+                      labels=c('Male','Female')),
+         race = factor(race,
+                       levels=1:5,
+                       labels=c('White','Black','American Indian',
+                                'Asian','Pacific Islander')),
+         age = factor(as.numeric(age),
+                      levels=1:12,
+                      labels=c('<1','1-4','5-14','15-24',
+                               '25-34','35-44','45-54',
+                               '55-64','65-74','75-84',
+                               '85+','Not Stated')),
+         hispanic = factor(case_when(hispanic < 200 ~ 1,
+                                     between(hispanic,200,299) ~ 2,
+                                     hispanic >= 996 ~ 3),
+                           levels=1:3,
+                           labels=c('Non-Hispanic','Hispanic','Unknown')),
+         raceEthnicity = factor(case_when(hispanic == 'Hispanic' ~ 5,
+                                          race == 'White' & hispanic == 'Non-Hispanic' ~ 1,
+                                          race == 'Black' & hispanic == 'Non-Hispanic' ~ 2,
+                                          race == 'American Indian' & hispanic == 'Non-Hispanic' ~ 3,
+                                          race %in% c('Asian','Pacific Islander') & hispanic == 'Non-Hispanic' ~ 4),
+                                levels = 1:5,
+                                labels=c('White','Black',
+                                         'American Indian/Alaska Native',
+                                         'Asian',
+                                         'Hispanic')),
+         foreign=factor(case_when(bpl %in% c('CC','MX','CU','YY','ZZ') ~ 1,
+                                  TRUE ~ 2),
+                        levels=1:2,
+                        labels=c('Foreign-Born','US-Born'))) %>%
+  select(-bpl)
+```
+
+```{r}
+comorbData <- comorbData %>%
+  filter(age != 'Not Stated',
+         hispanic != 'Unknown',
+         !(stateResidence %in% c('PR','VI','GU','AS','MP','ZZ')))
+```
+
+```{r}
 comorbRecords <- comorbData %>%
   separate(contrCondsMain, sapply(1:20,function(x) paste0('cond',x)),sep='[[:space:]]+') %>%
+  mutate(deathID = 1:nrow(comorbData)) %>%
   pivot_longer(cond1:cond20,names_to = 'condNum',values_to = 'ICDCode') %>%
   drop_na(ICDCode) %>%
-  group_by(ICDCode) %>%
-  summarise(cases=n(),
-            prop=cases/nrow(comorbData)) %>%
-  ungroup() %>%
-  left_join(ICD10Codebook,by='ICDCode')
-  
+  mutate(
+    ICDMainCode = str_sub(ICDCode,1,3),
+    ICDLetter = str_sub(ICDCode,1,1),
+    ICDNumber = as.numeric(str_sub(ICDCode,2,4)),
+    ICDMainNumber = as.numeric(str_sub(ICDCode,2,3)),
+    causeOfDeathSimple = factor(
+      case_when(
+        ICDLetter == 'C' ~ 1,
+        ICDLetter == 'F' & ICDMainNumber %in% c(1,3) ~ 2,
+        ICDLetter == 'G' & ICDMainNumber %in% c(30,31) ~ 2,
+        ICDLetter == 'I' & between(ICDMainNumber,10,15) ~ 3,
+        ICDLetter == 'I' & between(ICDMainNumber,20,25) ~ 4,
+        ICDLetter == 'I' & ICDMainNumber == 50 ~ 5,
+        ICDLetter == 'I' & between(ICDMainNumber,60,69) ~ 6,
+        ICDLetter == 'I' ~ 7,
+        ICDLetter == 'J' & between(ICDMainNumber,9,18) ~ 8,
+        ICDLetter == 'J' & between(ICDMainNumber,40,47) ~ 9,
+        ICDLetter == 'J' | ICDMainCode == 'R092' | (ICDLetter == 'U' & ICDMainNumber ==4) ~ 10,
+        ICDLetter == 'E' & between(ICDMainNumber,10,14) ~ 11,
+        ICDLetter == 'N' & between(ICDMainNumber,17,19) ~ 12,
+        ICDLetter == 'A' & between(ICDMainNumber,40,41) ~ 13,
+        ICDLetter == 'X' & ICDMainNumber %in% c(40:44,60:64,85) ~ 14,
+        ICDLetter == 'Y' & between(ICDMainNumber,10,14) ~ 14,
+        ICDMainCode == 'Y870' | (ICDLetter == 'X' & between(ICDMainNumber,66,84)) ~ 15,
+        ICDLetter %in% c('V','W','X','Y') ~ 16,
+        ICDCode == 'U071' ~ 17,
+        TRUE ~ 18),
+      levels=1:19,
+      labels=c('Malignant Neoplasm',
+               "Alzheimer's disease and dementia",
+               'Hypertensive heart disease',
+               'Ischemic heart disease',
+               'Heart failure',
+               'Cerebrovascular diseases',
+               'Other diseases of the circulatory system',
+               'Influenza and pneumonia',
+               'Chronic lower respiratory diseases',
+               'Other diseases of the respiratory system',
+               'Diabetes',
+               'Renal failure',
+               'Sepsis',
+               'Drug Overdose',
+               'Suicide',
+               'Other External Causes',
+               'COVID-19',
+               'All other causes',
+               'Total')))
 ```
 
 ```{r}
+comorbRecords <- comorbRecords %>%
+  mutate(majorCauses = case_when(
+    causeOfDeathSimple %in% c('Hypertensive heart disease',
+                              'Ischemic heart disease',
+                              'Cerebrovascular diseases',
+                              'Other diseases of the circulatory system') ~ 'Circulatory diseases',
+    causeOfDeathSimple %in% c('Influenza and pneumonia',
+                              'Chronic lower respiratory diseases',
+                              'Other diseases of the respiratory system') ~ 'Respiratory diseases',
+    causeOfDeathSimple %in% c('Suicide',
+                              'Drug Overdose',
+                              'Other External Causes') ~ 'External Causes',
+    causeOfDeathSimple %in% c('Sepsis') ~ 'All other causes',
+    TRUE ~ as.character(causeOfDeathSimple)))
+```
 
-comorbRecords %>%
-  filter(prop>=0.01,ICDCode != 'U07') %>%
+```{r}
+comorbTable <- comorbRecords %>%
+  distinct(deathID,majorCauses,raceEthnicity,foreign) %>%
+  group_by(raceEthnicity,foreign) %>%
+  mutate(size=n()) %>%
+  ungroup() %>%
+  group_by(majorCauses,raceEthnicity,foreign) %>%
+  summarise(cases=n(),
+            size=mean(size)) %>%
+  ungroup() %>%
+  mutate(prop=cases/size) %>%
+  filter(prop>=0.01,
+         majorCauses!='All other causes',
+         raceEthnicity!='American Indian/Alaska Native') %>%
   mutate(prop=100*prop) %>%
   arrange(desc(prop)) %>%
-  kable(col.names = c('ICD10 Code','Number of Cases','Percentage','Description'),
-        digits=2,
-        format.args = list(big.mark = ",")) %>%
-  kable_styling
-
+  select(-size)
 ```
 
 ```{r}
-shareNonUCD <- nrow(filter(comorbData,underCond != 'U071'))/nrow(comorbData)
+comorbTable %>%
+  filter(foreign=='US-Born') %>%
+  select(-foreign) %>%
+  group_by(raceEthnicity) %>%
+  gt() %>%
+  cols_label(
+    majorCauses='Cause of Death',
+    cases='Number of Cases',
+    prop='Percentage'
+    ) %>%
+  fmt_number(
+    columns = cases,
+    decimals = 0
+  ) %>%
+  fmt_number(
+    columns = prop,
+    decimals = 2
+  ) %>%
+  gtsave(here('figures','comorbTableUCDUS.png'),
+         vheight=2000,vwidth=1000,zoom=4)
 ```
 
-In 2020, `r 100*round(1-shareNonUCD,3)`% of deaths with COVID-19 anywhere on the death certificate, it was listed as the underlying cause of death.
+```{r}
+comorbTable %>%
+  filter(foreign=='Foreign-Born') %>%
+  select(-foreign) %>%
+  group_by(raceEthnicity) %>%
+  gt() %>%
+  cols_label(
+    majorCauses='Cause of Death',
+    cases='Number of Cases',
+    prop='Percentage'
+    ) %>%
+  fmt_number(
+    columns = cases,
+    decimals = 0
+  ) %>%
+  fmt_number(
+    columns = prop,
+    decimals = 2
+  ) %>%
+  gtsave(here('figures','comorbTableUCDForeign.png'),
+       vwidth = 1000,vheight = 2000,zoom=4)
+```
 
-Here is the list of causes of death that the [CDC](https://www.cdc.gov/nchs/nvss/vsrr/covid19/excess_deaths.htm) lists as frequent comorbid conditions with COVID-19 
-
-- Respiratory diseases
-- Influenza and pneumonia (J09–J18)
-- Chronic lower respiratory diseases (J40–J47)
-- Other diseases of the respiratory system (J00–J06, J20–J39, J60–J70, J80–J86, J90–J96, J97–J99, R09.2, U04)
-- Circulatory diseases
-- Hypertensive diseases (I10–I15)
-- Ischemic heart disease (I20–I25)
-- Heart failure (I50)
-- Cerebrovascular diseases (I60–I69)
-- Other disease of the circulatory system (I00–I09, I26–I49, I51, I52, I70–I99)
-- Malignant neoplasms (C00–C97)
-- Alzheimer disease and dementia (G30, G31, F01, F03)
-- Other select causes of death
-- Diabetes (E10–E14)
-- Renal failure (N17–N19)
-- Sepsis (A40–A41)
-
-They largely overlap with those in the table, so we could consider borrowing this list.
-
-
+```{r}
+comorbTable %>%
+  write_csv(here(outDir,'comorbTableUCD.csv'))
+```

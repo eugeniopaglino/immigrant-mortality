@@ -1,0 +1,162 @@
+---
+title: "Building Population Tables from ACS"
+author: "Eugenio Paglino"
+output: html_document
+---
+
+```{r, echo=F, include=F}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r}
+# Loading necessary packages
+library(here)
+library(glue)
+library(tidyverse)
+
+# Set seed for the Rmd
+set.seed(42)
+```
+
+```{r}
+# Do not rely on this to completely clean your environment
+# Better to do a full restart of R before running
+rm(list=ls())
+
+i_am('R/createPropTable.Rmd')
+
+inDir <- here('data','input')
+outDir <- here('data','output')
+```
+
+```{r}
+states <- read_csv(here(inDir,'utilities','states.csv'))
+```
+
+```{r}
+read_ACS <- function(path) {
+  
+  ACSMetadata <- ipumsr::read_ipums_ddi(path)
+  ACS <- ipumsr::read_ipums_micro(ACSMetadata)
+  names(ACS) <- sapply(names(ACS),str_to_lower)
+  
+  return(ACS)
+}
+
+clean_ACS <- function(ACSData) {
+  
+  agegrp.labs <- sapply(c(1,1:18),function(x) paste((x-1)*5,(x-1)*5+4,sep='-'))
+  agegrp.labs[1] <- '<1'
+  agegrp.labs[2] <- '1-4'
+  agegrp.labs[19] <- '85+'
+  
+  ACSData <- ACSData %>%
+    rename(stateFIPS = statefip,
+           hisp = hispan,
+           raceEthnicity = rachsing) %>%
+    mutate(stateNum = as.numeric(stateFIPS),
+           stateFIPS = if_else(stateNum<10,paste0('0',stateNum),as.character(stateNum)),
+           sex = factor(sex,
+                        levels=c(1,2),
+                        labels=c('Male','Female')),
+           citizen = factor(case_when(citizen < 5 ~ 1,
+                                      citizen == 5 ~ 2),
+                            levels=c(1,2),
+                            labels=c('Citizen','Non-Citizen')),
+           agegrp5 = floor(age/5) + 2,
+           agegrp5 = factor(case_when(age < 1 ~ 1,
+                                      age > 85 ~ 19,
+                                      TRUE ~ agegrp5),
+                            levels = 1:19,
+                            labels = agegrp.labs),
+           agegrp10 = factor(case_when(age < 18 ~ 1,
+                                       between(age,18,24) ~ 2,
+                                       between(age,25,34) ~ 3,
+                                       between(age,35,44) ~ 4,
+                                       between(age,45,54) ~ 5,
+                                       between(age,55,64) ~ 6,
+                                       age >= 65 ~ 7),
+                             levels = 1:7,
+                             labels = c('<18','18-24','25-34',
+                                        '35-44','45-54','55-64',
+                                        '65+')),
+            agegrpMort = factor(case_when(age < 1 ~ 1,
+                                          between(age,1,4) ~ 2,
+                                          between(age,5,14) ~ 3,
+                                          between(age,15,24) ~ 4,
+                                          between(age,25,34) ~ 5,
+                                          between(age,35,44) ~ 6,
+                                          between(age,45,54) ~ 7,
+                                          between(age,55,64) ~ 8,
+                                          between(age,65,74) ~ 9,
+                                          between(age,75,84) ~ 10,
+                                          age >= 85 ~ 11),
+                             levels = 1:11,
+                             labels = c('<1','1-4','5-14','15-24','25-34',
+                                        '35-44','45-54','55-64','65-74',
+                                        '75-84','85+')),
+           foreign = factor(case_when(bpl <= 120 ~ 2,
+                                      TRUE ~ 1),
+                            levels = 1:2,
+                            labels=c('Foreign-Born','US-Born')),
+           raceEthnicity = factor(raceEthnicity,
+                                  levels=1:5,
+                                  labels=c('White','Black',
+                                           'American Indian/Alaska Native',
+                                           'Asian',
+                                           'Hispanic')),
+           hisp = factor(case_when(hisp == 1 ~ 1,
+                                   hisp > 1 ~ 2),
+                         levels=1:2,
+                         labels=c('Non-Hispanic','Hispanic'))) %>%
+    select(-c(stateNum,hisp,age,agegrp5,agegrp10,citizen)) %>%
+    rename(age=agegrpMort)
+    
+  return(ACSData)
+  
+}
+
+compute_proportions <- function(ACSData) {
+  
+  proportions <- ACSData %>%
+  left_join(states,by='stateFIPS') %>%
+  group_by(year,age,sex,raceEthnicity) %>%
+  summarize(weightedCountForeign = sum(perwt*(foreign=='Foreign-Born')),
+            weightedCountUSBorn = sum(perwt*(foreign=='US-Born')),
+            weightedCount = sum(perwt)) %>%
+  ungroup() %>%
+  mutate(propForeign = 100*(weightedCountForeign/weightedCount),
+         propUSBorn = 100*(weightedCountUSBorn/weightedCount)) %>%
+  select(-c(weightedCountForeign:weightedCount))
+  
+  return(proportions)
+  
+}
+
+create_proportions_table <- function(path) {
+  
+  ACS <- read_ACS(path)
+  ACS <- clean_ACS(ACS)
+  ACSproportions <- compute_proportions(ACS)
+  
+  return(ACSproportions)
+
+}
+```
+
+```{r}
+paths <- map(2017:2019, ~ here(inDir,glue('ACS{.x}1Year'),glue('ACS{.x}1Year.xml')))
+```
+
+```{r}
+proportionsData <- map_dfr(paths,create_proportions_table)
+```
+
+```{r}
+proportionsData %>% arrow::write_feather(here(outDir,'proportionsData.feather'))
+```
+
