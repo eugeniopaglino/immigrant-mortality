@@ -39,9 +39,9 @@ We obtained population counts by single years of age, bridged race/ethnicity, an
 
 We included nine exhaustive and mutually exclusive cause-of-death categories based on the underlying cause of death. These are respiratory diseases, circulatory diseases, cancers, Alzheimer’s disease and dementia, diabetes, COVID-19, external causes, and all other causes of death combined. We chose these cause-of-death categories because mortality from them has been linked to the COVID-19 pandemic. Because of large native-born and foreign-born differences in external cause mortality, we included these as a separate category. 
 
-We then calculated age and sex-specific death rates for 10-year age groups by nativity and race/ethnicity. Age-standardized death rates (ASCDR) were then computed for all causes combined, COVID-19, and all causes other than COVID-19 at ages 25+, 25-64, and 65+ and by the more detailed causes of death at ages 25+ for the pre-pandemic period 2017-2019 and for 2020. We pooled three pre-pandemic years to adjust for year-to-year fluctuations in the death rates. We age-standardized the rates using the average age-structure of the US population in 2017-2020. 
+We then calculated age and sex-specific death rates for 10-year age groups by nativity and race/ethnicity. Age-standardized death rates (ASDR) were then computed for all causes combined, COVID-19, and all causes other than COVID-19 at ages 25+, 25-64, and 65+ and by the more detailed causes of death at ages 25+ for the pre-pandemic period 2017-2019 and for 2020. We pooled three pre-pandemic years to adjust for year-to-year fluctuations in the death rates. We age-standardized the rates using the average age-structure of the US population in 2017-2020. 
 
-Based on these data, we examined the contribution to COVID-19 and all other causes of death, other than COVID-19, to the change in all-cause mortality between 2017-2019 and 2020 by sex, nativity, and race/ethnicity at ages 25+, 25-64 and 65+. We further decomposed the cause-of-death contributions by the more detailed cause-of-death categories to US-born and foreign-born difference in ASCDRs at ages 25+ by race/ethnicity and sex in 2017-2019 and 2020 and their contributions to the change in these differences between 2017-2019 and 2020.
+Based on these data, we examined the contribution to COVID-19 and all other causes of death, other than COVID-19, to the change in all-cause mortality between 2017-2019 and 2020 by sex, nativity, and race/ethnicity at ages 25+, 25-64 and 65+. We further decomposed the cause-of-death contributions by the more detailed cause-of-death categories to US-born and foreign-born difference in ASDRs at ages 25+ by race/ethnicity and sex in 2017-2019 and 2020 and their contributions to the change in these differences between 2017-2019 and 2020.
 
 In this repository we stored all the codes needed to reproduce the figures and tables in the paper as well as supplementary material. Here is the repository structure.
 
@@ -64,10 +64,10 @@ variableDescriptions <-
     age = 'Ages over which the mortality measure was computed, 100 is used as an upper bound.',
     deaths = 'Number of deaths.',
     pop	= 'Mid-period population.',
-    ASCDR	= 'Age-Standardized Crude Death Rate.',
-    logASCDR = 'Logarithm of the Age-Standardized Crude Death Rate.',
-    ASCDR.SD = 'Standard deviation of the ASCDR computed using the formula in Chiang (1984) “The Life Table and Its Application” (pp. 105-106).',
-    coefOfVar = 'Coefficient of variation for the ASCDR computed as ASCDR.SD/ASCDR.'
+    ASDR	= 'Age-Standardized Crude Death Rate.',
+    logASDR = 'Logarithm of the Age-Standardized Crude Death Rate.',
+    ASDR.SD = 'Standard deviation of the ASDR computed using the formula in Chiang (1984) “The Life Table and Its Application” (pp. 105-106).',
+    coefOfVar = 'Coefficient of variation for the ASDR computed as ASDR.SD/ASDR.'
     )
 ```
 

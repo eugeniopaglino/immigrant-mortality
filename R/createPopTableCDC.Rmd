@@ -135,7 +135,8 @@ popTable %>%
 
 ```{r}
 popTable %>% 
-  filter(!(age %in% c('<1','1-4','5-14','15-24'))) %>%
+  filter(!(age %in% c('<1','1-4','5-14','15-24')),
+         raceEthnicity %in% c('White','Black','Hispanic','Asian')) %>%
   group_by(age,sex,raceEthnicity,foreign) %>%
   summarise(pop=mean(pop)) %>%
   ungroup() %>%

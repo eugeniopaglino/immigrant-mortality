@@ -50,7 +50,7 @@ create_abs_diff_trends_data <- function(data) {
                                           TRUE ~ 'Non-COVID-19'),
                                 levels = c('Total','Non-COVID-19','COVID-19'))) %>%
     group_by(sex,raceEthnicity,foreign,majorCauses,period) %>%
-    summarise(ASCDR=sum(ASCDR)) %>% 
+    summarise(ASDR=sum(ASDR)) %>% 
     ungroup() %>%
     filter(!(period=='2017-2019' & majorCauses %in% c('Non-COVID-19','COVID-19')))
   
@@ -67,8 +67,8 @@ create_rel_diff_trends_data <- function(data) {
                                           majorCauses == 'COVID-19' ~ 'COVID-19',
                                           TRUE ~ 'Non-COVID-19'),
                                 levels = c('Total','Non-COVID-19','COVID-19'))) %>%
-    group_by(sex,raceEthnicity,foreign,majorCauses,period) %>%
-    summarise(ASCDR=sum(ASCDR)) %>% 
+    group_by(sex,raceEthnicity,foreign,majorCauses,period,age) %>%
+    summarise(ASDR=sum(ASDR)) %>% 
     ungroup() %>%
     filter(!(period=='2017-2019' & majorCauses %in% c('Non-COVID-19','COVID-19'))) %>%
     mutate(
@@ -86,8 +86,8 @@ create_rel_diff_trends_data <- function(data) {
         'Total (2017-2019)'))
   
   diffTrendsData <- diffTrendsData %>%
-    pivot_wider(names_from = foreign, values_from = ASCDR) %>%
-    mutate(ASCDRRatio = `US-Born`/`Foreign-Born`) %>%
+    pivot_wider(names_from = foreign, values_from = ASDR) %>%
+    mutate(ASDRRatio = `US-Born`/`Foreign-Born`) %>%
     select(-c(`US-Born`,`Foreign-Born`))
   
   return(diffTrendsData)
@@ -100,22 +100,22 @@ abs_diff_trends_simple_plot <- function(data) {
   diffTrendsData <- create_abs_diff_trends_data(data)
   
   diffTrendsData <- diffTrendsData %>%
-    mutate(ASCDR = if_else(period==as.character(2020) & majorCauses == 'Total',
-                           NA_real_, ASCDR)) %>%
-    fill(ASCDR) %>%
-    pivot_wider(names_from = majorCauses,values_from = ASCDR) %>%
+    mutate(ASDR = if_else(period==as.character(2020) & majorCauses == 'Total',
+                           NA_real_, ASDR)) %>%
+    fill(ASDR) %>%
+    pivot_wider(names_from = majorCauses,values_from = ASDR) %>%
     mutate(`Non-COVID-19` = `Non-COVID-19` - Total) %>%
-    pivot_longer(Total:`COVID-19`,values_to = 'ASCDR', names_to = 'majorCauses') %>%
-    mutate(majorCauses = factor(case_when(majorCauses == 'Total' ~ 'ASCDR Baseline 2017-2019',
+    pivot_longer(Total:`COVID-19`,values_to = 'ASDR', names_to = 'majorCauses') %>%
+    mutate(majorCauses = factor(case_when(majorCauses == 'Total' ~ 'ASDR Baseline 2017-2019',
                                           majorCauses == 'Non-COVID-19' ~ 'Non-COVID-19 Increase',
-                                          majorCauses == 'COVID-19' ~ 'COVID-19 ASCDR'),
+                                          majorCauses == 'COVID-19' ~ 'COVID-19 ASDR'),
                                 levels = c('Non-COVID-19 Increase',
-                                           'COVID-19 ASCDR',
-                                           'ASCDR Baseline 2017-2019')))
+                                           'COVID-19 ASDR',
+                                           'ASDR Baseline 2017-2019')))
   
   diffTrendsPlot <- diffTrendsData %>%
     ggplot() +
-    geom_col(mapping = aes(y=ASCDR,
+    geom_col(mapping = aes(y=ASDR,
                            x=fct_relevel(foreign,'US-Born','Foreign-Born'),
                            fill=majorCauses),
                      position='stack')+
@@ -152,13 +152,102 @@ rel_diff_trends_simple_h_plot <- function(data) {
                                      'Total (2020)',
                                      'COVID-19 (2020)')) %>%
     ggplot() +
-    geom_segment(mapping = aes(y=1, yend = ASCDRRatio,
+    geom_segment(mapping = aes(y=1, yend = ASDRRatio,
                            x=majorCauses,xend=majorCauses),
                  linewidth=8,
                  color='gray50')+
     coord_trans(y='log2') +
     labs(x='',
-         y='Ratio of US-Born to Foreign-Born ASCDR') +
+         y='Ratio of US-Born to Foreign-Born ASDR') +
+    facet_nested_wrap(sex ~ raceEthnicity , nrow = 2) +
+    theme_minimal() +
+    theme(legend.position = 'bottom',
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.spacing.y = unit(2,'lines'),
+          axis.text.x = element_text(angle=90),
+          strip.text.y.left = element_text(angle=0),
+          strip.placement = 'outer',
+          strip.background.x = element_rect(fill='white')) +
+    guides(fill=guide_legend(nrow=1))
+  
+  return(diffTrendsPlot)
+}
+```
+
+```{r}
+rel_diff_trends_h_plot <- function(data) {
+  
+  diffTrendsData <- create_rel_diff_trends_data(data)
+  
+  diffTrendsPlot <- diffTrendsData %>%
+    filter(majorCauses != 'Non-COVID-19 (2020)') %>%
+    mutate(majorCauses = fct_relevel(majorCauses,
+                                     'Total (2017-2019)',
+                                     'Total (2020)',
+                                     'COVID-19 (2020)')) %>%
+    ggplot() +
+    geom_linerange(mapping = aes(ymin=1, ymax = ASDRRatio,
+                           x=majorCauses,
+                           group=age),
+                 position=position_dodge2(width = 0.8,preserve = 'total'))+
+    geom_point(mapping = aes(y = ASDRRatio, x=majorCauses,
+                           shape=age,group=age,fill=age),
+             size=2.5,
+             position=position_dodge2(width = 0.8))+
+    coord_trans(y='log2') +
+    scale_shape_manual(
+      values = c(21:22),
+      breaks = c('25-64','65+'),
+      labels = c('25-64','65+'),
+      name = 'Age Group'
+      ) +
+    scale_fill_manual(
+      values=c('white','gray50'),
+      breaks = c('25-64','65+'),
+      labels = c('25-64','65+'),
+      name = 'Age Group'
+      ) +
+    labs(x='',
+         y='Ratio of US-Born to Foreign-Born ASDR') +
+    facet_nested_wrap(sex ~ raceEthnicity , nrow = 2) +
+    theme_minimal() +
+    theme(legend.position = 'bottom',
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.spacing.y = unit(2,'lines'),
+          axis.text.x = element_text(angle=90),
+          strip.text.y.left = element_text(angle=0),
+          strip.placement = 'outer',
+          strip.background.x = element_rect(fill='white')) +
+    guides(fill=guide_legend(nrow=1))
+  
+  return(diffTrendsPlot)
+}
+```
+
+```{r}
+rel_diff_trends_hbar_plot <- function(data) {
+  
+  diffTrendsData <- create_rel_diff_trends_data(data)
+  
+  diffTrendsPlot <- diffTrendsData %>%
+    filter(majorCauses != 'Non-COVID-19 (2020)') %>%
+    mutate(majorCauses = fct_relevel(majorCauses,
+                                     'Total (2017-2019)',
+                                     'Total (2020)',
+                                     'COVID-19 (2020)')) %>%
+    ggplot() +
+    geom_linerange(mapping = aes(ymin=1, ymax = ASDRRatio,
+                           x=majorCauses,
+                           group=age,color=age),
+                 linewidth=5,
+                 position=position_dodge2(width = 0.8,preserve = 'total')) +
+    scale_color_grey() +
+    coord_trans(y='log2') +
+    labs(x='',
+         color='Age-Group',
+         y='Ratio of US-Born to Foreign-Born ASDR') +
     facet_nested_wrap(sex ~ raceEthnicity , nrow = 2) +
     theme_minimal() +
     theme(legend.position = 'bottom',
@@ -177,35 +266,78 @@ rel_diff_trends_simple_h_plot <- function(data) {
 
 ```{r}
 ageStdRates <- read_csv(here(outDir,'ageStdRates.csv'))
-ageStdRatesBelow65 <- read_csv(here(outDir,'ageStdRatesBelow65.csv'))
-ageStdRatesAbove65 <- read_csv(here(outDir,'ageStdRatesAbove65.csv'))
+ageStdRatesSens <- read_csv(here(outDir,'ageStdRatesSens.csv'))
 ```
 
 ```{r}
 ageStdRates <- ageStdRates %>%
   mutate(raceEthnicity = fct_relevel(raceEthnicity,'White','Hispanic','Black','Asian'))
-ageStdRatesBelow65 <- ageStdRatesBelow65 %>%
+ageStdRatesSens <- ageStdRatesSens %>%
   mutate(raceEthnicity = fct_relevel(raceEthnicity,'White','Hispanic','Black','Asian'))
-ageStdRatesAbove65 <- ageStdRatesAbove65 %>%
+
+ageStdRatesBelow65 <- read_csv(here(outDir,'ageStdRatesBelow65.csv')) %>%
   mutate(raceEthnicity = fct_relevel(raceEthnicity,'White','Hispanic','Black','Asian'))
+ageStdRatesAbove65 <- read_csv(here(outDir,'ageStdRatesAbove65.csv')) %>%
+  mutate(raceEthnicity = fct_relevel(raceEthnicity,'White','Hispanic','Black','Asian'))
+```
+
+```{r}
+ageStdRatesByAge <- ageStdRatesBelow65 %>%
+  mutate(age='25-64') %>%
+  add_row(
+    ageStdRatesAbove65 %>%
+      mutate(age='65+')
+    )
 ```
 
 ```{r}
 absDiffTrendsSimplePlot <- abs_diff_trends_simple_plot(ageStdRates)
 relDiffTrendsSimpleHPlot <- rel_diff_trends_simple_h_plot(ageStdRates)
+absDiffTrendsSimplePlotSens <- abs_diff_trends_simple_plot(ageStdRatesSens)
+relDiffTrendsSimpleHPlotSens <- rel_diff_trends_simple_h_plot(ageStdRatesSens)
 ```
 
 ```{r}
-pdf(here(figuresDir,'absDiffTrendsSimplePlot.pdf'), width = 7, height = 9)
+relDiffTrendsHPlot <- rel_diff_trends_h_plot(ageStdRatesByAge)
+relDiffTrendsHBarPlot <- rel_diff_trends_hbar_plot(ageStdRatesByAge)
+```
+
+```{r}
+svg(here(figuresDir,'absDiffTrendsSimplePlot.svg'), width = 7, height = 9)
 absDiffTrendsSimplePlot
 dev.off()
 ```
 
 ```{r}
-pdf(here(figuresDir,'relDiffTrendsSimpleHPlot.pdf'), width = 6, height = 6)
+svg(here(figuresDir,'relDiffTrendsSimpleHPlot.svg'), width = 6, height = 6)
 relDiffTrendsSimpleHPlot
 dev.off()
 ```
+
+```{r}
+svg(here(figuresDir,'absDiffTrendsSimplePlotSens.svg'), width = 7, height = 9)
+absDiffTrendsSimplePlotSens
+dev.off()
+```
+
+```{r}
+svg(here(figuresDir,'relDiffTrendsSimpleHPlotSens.svg'), width = 6, height = 6)
+relDiffTrendsSimpleHPlotSens
+dev.off()
+```
+
+```{r}
+svg(here(figuresDir,'relDiffTrendsHPlot.svg'), width = 8, height = 6)
+relDiffTrendsHPlot
+dev.off()
+```
+
+```{r}
+svg(here(figuresDir,'relDiffTrendsHBarPlot.svg'), width = 6, height = 6)
+relDiffTrendsHBarPlot
+dev.off()
+```
+
 
 
 

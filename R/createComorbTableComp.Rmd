@@ -90,14 +90,13 @@ combine.mort.data <- function(files) {
 ```
 
 ```{r}
-files <- sapply(2020,function(x) here(inDir,glue('mort{x}'),glue('MULT{x}USAllCnty.txt')))
+files <- sapply(2017:2019,function(x) here(inDir,glue('mort{x}'),glue('MULT{x}USAllCnty.txt')))
 
 mortData <- combine.mort.data(files)
 ```
 
 ```{r}
 comorbData <- mortData %>%
-  filter((underCond == 'U071')) %>%
   mutate(contrCondsMain = str_match_all(contrConds,'[:alpha:]{1}[:digit:]{2}'),
          contrCondsMain = sapply(contrCondsMain,
                                  function(x) paste(x,collapse=' ')))
@@ -258,7 +257,7 @@ comorbTable %>%
     columns = prop,
     decimals = 2
   ) %>%
-  gtsave(here('figures','comorbTableUCDUS.png'),
+  gtsave(here('figures','comorbTableUCDUSComp.png'),
          vheight=2000,vwidth=1000,zoom=4)
 ```
 
@@ -282,11 +281,11 @@ comorbTable %>%
     columns = prop,
     decimals = 2
   ) %>%
-  gtsave(here('figures','comorbTableUCDForeign.png'),
+  gtsave(here('figures','comorbTableUCDForeignComp.png'),
        vwidth = 1000,vheight = 2000,zoom=4)
 ```
 
 ```{r}
 comorbTable %>%
-  write_csv(here(outDir,'comorbTableUCD.csv'))
+  write_csv(here(outDir,'comorbTableUCDComp.csv'))
 ```

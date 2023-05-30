@@ -1,4 +1,4 @@
-﻿"period","sex","raceEthnicity","foreign","majorCauses","age","deaths","pop","ASCDR","logASCDR","ASCDR.SD","coefOfVar"
+﻿"period","sex","raceEthnicity","foreign","majorCauses","age","deaths","pop","ASDR","logASDR","ASDR.SD","coefOfVar"
 "2017-2019","Female","White","Foreign-Born","All other causes","65-100",23332,4077655.041037768,473.2711463184124,6.159668472278517,0.4130469058372459,0.08727489707546038
 "2017-2019","Female","White","Foreign-Born","Alzheimer's disease and dementia","65-100",28943,4077655.041037768,522.679725187686,6.258968896345354,0.29804609739374094,0.05702270109802275
 "2017-2019","Female","White","Foreign-Born","COVID-19","65-100",0,4077655.041037768,0,NA,0,NA

@@ -54,3 +54,12 @@ Heart failure,Hispanic,Foreign-Born,1494,1.269113149847095
 Malignant Neoplasm,Black,Foreign-Born,241,1.1941925573559287
 Malignant Neoplasm,Hispanic,US-Born,623,1.0600826966598036
 Malignant Neoplasm,Asian,Foreign-Born,347,1.0382382861588175
+Malignant Neoplasm,Hispanic,Foreign-Born,1070,0.908936459395175
+External Causes,Asian,US-Born,22,0.6584854833882071
+External Causes,White,US-Born,2796,0.5465581108949987
+External Causes,Hispanic,US-Born,282,0.47984481614456603
+External Causes,White,Foreign-Born,182,0.41317623555585825
+External Causes,Asian,Foreign-Born,119,0.3560528992878942
+External Causes,Black,US-Born,467,0.34973152301712707
+External Causes,Hispanic,Foreign-Born,365,0.31005776418620457
+External Causes,Black,Foreign-Born,49,0.2428026361429067
