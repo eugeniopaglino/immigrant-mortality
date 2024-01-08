@@ -1,3 +1,14 @@
 .Rhistory
 .DS_Store
 /data/input
+/presentation
+/R/createComorbTableComp.Rmd
+/R/createComorbTable.Rmd
+/R/createPopTableCDC.Rmd
+/R/relativeComorbTable.Rmd
+/R/mortalityDifferentialsPlots.Rmd
+/data/output/comorbTableUCD.csv
+/data/output/comorbTableUCDComp.csv
+/data/output/exampleData.csv
+/data/output/finalTable.feather
+/data/output/relativeComorbTable.csv
