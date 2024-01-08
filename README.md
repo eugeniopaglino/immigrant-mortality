@@ -5,7 +5,7 @@ Eugenio Paglino and Irma T. Elo
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-## Immigrant Mortality during the COVID-19 Pandemic
+# Immigrant Mortality during the COVID-19 Pandemic
 
 We used death records for 2017-2020 from the National Center for Health
 Statistics (NCHS) under a data user agreement. We classified deaths by
@@ -54,6 +54,8 @@ categories to US-born and foreign-born difference in ASDRs at ages 25+
 by race/ethnicity and sex in 2017-2019 and 2020 and their contributions
 to the change in these differences between 2017-2019 and 2020.
 
+## Repository Structure
+
 In this repository we stored all the codes needed to reproduce the
 figures and tables in the paper as well as supplementary material. Here
 is the repository structure.
@@ -72,8 +74,7 @@ is the repository structure.
     ## │   ├── mortalityDifferentialsPlotsNoRatios.Rmd
     ## │   ├── mortalityRatiosPlots.Rmd
     ## │   ├── relativeComorbTable.Rmd
-    ## │   ├── sampleAndSummaryTables.Rmd
-    ## │   └── statsForAbstract.xlsx
+    ## │   └── sampleAndSummaryTables.Rmd
     ## ├── README.Rmd
     ## ├── README.md
     ## ├── data
@@ -87,17 +88,9 @@ is the repository structure.
     ## │   │   ├── ACS20191Year
     ## │   │   │   ├── ACS20191Year.dat
     ## │   │   │   └── ACS20191Year.xml
-    ## │   │   ├── ACS20201Year
-    ## │   │   │   ├── ACS20201Year.dat
-    ## │   │   │   └── ACS20201Year.xml
-    ## │   │   ├── ACS20211Year
-    ## │   │   │   ├── ACS20211Year.dat
-    ## │   │   │   └── ACS20211Year.xml
     ## │   │   ├── ACSDescStats
     ## │   │   │   ├── ACS17to19.dat
     ## │   │   │   └── ACS17to19.xml
-    ## │   │   ├── CDCComorbidities
-    ## │   │   │   └── contributingConditions.csv
     ## │   │   ├── CDCPopEstimates
     ## │   │   │   ├── CDCPopEstimates2017-2020.txt
     ## │   │   │   └── CDCPopEstimates2021.txt
@@ -123,23 +116,12 @@ is the repository structure.
     ## │   │   │   ├── MULT2019PS.AllCnty.txt
     ## │   │   │   ├── MULT2019USAllCnty.txt
     ## │   │   │   └── Mort2005ToPresentAllCntyLayout_NAPHSIS.doc
-    ## │   │   ├── mort2020
-    ## │   │   │   ├── MULT2020.PSAllCnty.txt
-    ## │   │   │   ├── MULT2020.USPSAllCnty.zip
-    ## │   │   │   ├── MULT2020.USPSAllCnty.zip.exe
-    ## │   │   │   ├── MULT2020USAllCnty.txt
-    ## │   │   │   └── Mort_2005ToPresentAllCntyLayout_NAPHSIS.doc
-    ## │   │   ├── mort2021
-    ## │   │   │   ├── MULT2021PSAllCnty.txt
-    ## │   │   │   ├── MULT2021USAllCnty.txt
-    ## │   │   │   └── Mort_2021 Historical File Documentation.pdf
-    ## │   │   ├── mortPop
-    ## │   │   │   ├── Documentation - mortpop files.docx
-    ## │   │   │   └── countypop1990to2020_formatted.dta
-    ## │   │   └── utilities
-    ## │   │       ├── FIPSmetroregion4cat.csv
-    ## │   │       ├── stateBEARegionCrosswalk.rds
-    ## │   │       └── states.csv
+    ## │   │   └── mort2020
+    ## │   │       ├── MULT2020.PSAllCnty.txt
+    ## │   │       ├── MULT2020.USPSAllCnty.zip
+    ## │   │       ├── MULT2020.USPSAllCnty.zip.exe
+    ## │   │       ├── MULT2020USAllCnty.txt
+    ## │   │       └── Mort_2005ToPresentAllCntyLayout_NAPHSIS.doc
     ## │   └── output
     ## │       ├── ageStdRates.csv
     ## │       ├── ageStdRates.xlsx
@@ -160,11 +142,11 @@ is the repository structure.
     ## │       ├── proportionsData.feather
     ## │       ├── relativeComorbTable.csv
     ## │       ├── standardPop.csv
+    ## │       ├── statsForAbstract.xlsx
     ## │       ├── summaryTableDataFemales.csv
     ## │       └── summaryTableDataMales.csv
     ## ├── figures
     ## │   ├── ICDCodesTable.docx
-    ## │   ├── ICDCodesTable.png
     ## │   ├── USBornForeignDiffFemalesColorSafePlot.svg
     ## │   ├── USBornForeignDiffFemalesColorSafePlotSens.svg
     ## │   ├── USBornForeignDiffMalesColorSafePlot.svg
@@ -173,18 +155,11 @@ is the repository structure.
     ## │   ├── absDiffTrendsSimplePlot.svg
     ## │   ├── absDiffTrendsSimplePlotSens.svg
     ## │   ├── ageStdRatesForPrint.pdf
-    ## │   ├── comorbTableUCDForeign.png
-    ## │   ├── comorbTableUCDForeignComp.png
-    ## │   ├── comorbTableUCDUS.png
-    ## │   ├── comorbTableUCDUSComp.png
     ## │   ├── contributionsTableFemales.docx
-    ## │   ├── contributionsTableFemales.png
     ## │   ├── contributionsTableMales.docx
-    ## │   ├── contributionsTableMales.png
     ## │   ├── diffTrendsPlot.svg
     ## │   ├── diffTrendsPlotSens.svg
     ## │   ├── diffTrendsTable.docx
-    ## │   ├── diffTrendsTable.png
     ## │   ├── popTable.png
     ## │   ├── ratioTrendsPlot.svg
     ## │   ├── ratioTrendsPlot2.svg
@@ -195,26 +170,14 @@ is the repository structure.
     ## │   ├── relDiffTrendsHPlot.svg
     ## │   ├── relDiffTrendsSimpleHPlot.svg
     ## │   ├── relDiffTrendsSimpleHPlotSens.svg
-    ## │   ├── relativeComorbTableForeign.png
-    ## │   ├── relativeComorbTableUS.png
     ## │   ├── sampleTable2Females.docx
-    ## │   ├── sampleTable2Females.png
     ## │   ├── sampleTable2Males.docx
-    ## │   ├── sampleTable2Males.png
     ## │   ├── sampleTableFemales.docx
-    ## │   ├── sampleTableFemales.png
     ## │   ├── sampleTableMales.docx
-    ## │   ├── sampleTableMales.png
     ## │   ├── summaryTableFemales.docx
-    ## │   ├── summaryTableFemales.png
-    ## │   ├── summaryTableMales.docx
-    ## │   └── summaryTableMales.png
-    ## ├── paper
-    ## │   └── manustricp_DR_SM.docx
-    ## └── presentation
-    ##     ├── 2023 CSERI T.S. poster template.potx
-    ##     ├── CSERI_presentation.pdf
-    ##     └── CSERI_presentation.pptx
+    ## │   └── summaryTableMales.docx
+    ## └── paper
+    ##     └── manustricp_DR_SM.docx
 
 The `data/output` folder contains all the datasets produced in the
 project. The most important ones are the `ageStdRates*.csv` files that
@@ -230,6 +193,8 @@ these data, in which information on place of birth has been masked, can
 be obtained from the [Vital Statistics Online Data
 Portal](https://www.cdc.gov/nchs/data_access/vitalstatsonline.htm#Mortality_Multiple).
 They have the same structure as the data we used.
+
+## Content of Main Data Files
 
 The table below details the structure of the `ageStdRates*.csv` files.
 
@@ -1329,3 +1294,32 @@ mean: 0.575, sd: 0.557, nuniq: 408
 </tr>
 </tbody>
 </table>
+
+## Description of R Code
+
+Below we briefly describe each of the R files. Ideally, they would be
+run in the order in whcih they are listed below.
+
+- `createMortTable.Rmd`: Reads and cleans the death records creating
+  death counts.
+- `createPopTableCDC.Rmd`: Reads and cleans the population data from
+  CDC.
+- `createPropTable.Rmd`: Reads and cleans the ACS data to compute
+  proportion foreign-born by sex, race, Hispanic origin, age, and year
+  to be applied to the CDC population estimates.
+- `createFinalTable.Rmd`: Combines the death and population counts in a
+  unique cleaned file.
+- `sampleAndSummaryTables.Rmd`: Computes age-specific and
+  age-standardized rates and creates the sample and summary tables
+  (Supplementary Tables 1a, 1b, 3a, and 3b).
+- `mortalityDifferentialsPlotsNoRatios.Rmd`: Creates Figure 1 and Figure
+  2.
+- `compWithWhitesPlots.Rmd`: Creates Figure 3 and the corresponding
+  Supplementary Table 4.
+- `contributionsPlots.Rmd`: Creates Figure 4a and 4b and the
+  corresponding Supplementary Tables 5a and 5b.
+
+As a note to help readers navigate the scripts, we used a functional
+approach, defining the functions to create each figure and table at the
+start of the file and then running the functions and saving the output
+below.

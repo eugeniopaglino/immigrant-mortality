@@ -31,7 +31,7 @@ rm(list=ls())
 
 i_am('README.Rmd')
 ```
-## Immigrant Mortality during the COVID-19 Pandemic
+# Immigrant Mortality during the COVID-19 Pandemic
 
 We used death records for 2017-2020 from the National Center for Health Statistics (NCHS) under a data user agreement. We classified deaths by sex, age, bridged race, Hispanic origin, nativity, and cause of death. Deaths of US-born residents include deaths of individuals who were born and resided in the 50 US states, and deaths of foreign-born residents include deaths of foreign-born individuals residing in the 50 US states.
 
@@ -43,17 +43,21 @@ Using the average 2017-2020 age distribution as the standard, we calculated age-
 
 Based on these data, we examined the contribution to COVID-19 and all other causes of death, other than COVID-19, to the change in all-cause mortality between 2017-2019 and 2020 by sex, nativity, and race/ethnicity at ages 25+, 25-64 and 65+. We further decomposed the cause-of-death contributions by the more detailed cause-of-death categories to US-born and foreign-born difference in ASDRs at ages 25+ by race/ethnicity and sex in 2017-2019 and 2020 and their contributions to the change in these differences between 2017-2019 and 2020.
 
+## Repository Structure
+
 In this repository we stored all the codes needed to reproduce the figures and tables in the paper as well as supplementary material. Here is the repository structure.
 
 ```{r}
 dir_tree(
   path=here(),
-  regexp='ACS20201Year|ACS20211Year|mort2021|mortPop|utilities|presentation',
+  regexp='ACS20201Year|ACS20211Year|mort2021|mortPop|utilities|CDCComorbidities|presentation',
   invert=T
   )
 ```
 
 The `data/output` folder contains all the datasets produced in the project. The most important ones are the `ageStdRates*.csv` files that store the age standardized crude death rates by sex, race/ethnicity, nativity, cause of death, and period together with uncertainty measures for each rate. The structure of these files is described below. The remaining files are produced in the project as intermediate steps. The `figures` folder contains all figures and tables of the project. Finally, the `R` folder contains all the code used to clean and analyse the data. This repository does not contain the individual level death records because they are not publicly available. The public version of these data, in which information on place of birth has been masked, can be obtained from the [Vital Statistics Online Data Portal](https://www.cdc.gov/nchs/data_access/vitalstatsonline.htm#Mortality_Multiple). They have the same structure as the data we used.
+
+## Content of Main Data Files
 
 The table below details the structure of the `ageStdRates*.csv` files.
 
@@ -143,3 +147,20 @@ walk(
       )
   )
 ```
+
+## Description of R Code
+
+Below we briefly describe each of the R files. Ideally, they would be run in the order in whcih they are listed below.
+
+- `createMortTable.Rmd`: Reads and cleans the death records creating death counts.
+- `createPopTableCDC.Rmd`: Reads and cleans the population data from CDC.
+- `createPropTable.Rmd`: Reads and cleans the ACS data to compute proportion foreign-born by sex, race, Hispanic origin, age, and year to be applied to the CDC population estimates.
+- `createFinalTable.Rmd`: Combines the death and population counts in a unique cleaned file.
+- `sampleAndSummaryTables.Rmd`: Computes age-specific and age-standardized rates and creates the sample and summary tables (Supplementary Tables 1a, 1b, 3a, and 3b).
+- `mortalityDifferentialsPlotsNoRatios.Rmd`: Creates Figure 1 and Figure 2.
+- `compWithWhitesPlots.Rmd`: Creates Figure 3 and the corresponding Supplementary Table 4.
+- `contributionsPlots.Rmd`: Creates Figure 4a and 4b and the corresponding Supplementary Tables 5a and 5b.
+
+As a note to help readers navigate the scripts, we used a functional approach, defining the functions to create each figure and table at the start of the file and then running the functions and saving the output below.
+
+
