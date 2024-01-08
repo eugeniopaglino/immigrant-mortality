@@ -39,11 +39,14 @@ outDir <- here('data','output')
 create_contributions_data <- function(data) {
   contributionsData <- data %>%
     filter(foreign != 'Total') %>%
-    select(-c(deaths,pop,logASDR,ASDR.SD,coefOfVar)) %>%
-    pivot_wider(names_from = foreign, values_from = ASDR) %>%
-    rename(ASDRForeign = 'Foreign-Born',
-           ASDRUSBorn = 'US-Born') %>%
-    mutate(ASDRDiff = ASDRUSBorn - ASDRForeign)
+    select(-c(deaths,pop,logASDR,coefOfVar)) %>%
+    pivot_wider(names_from = foreign, values_from = c(ASDR,ASDR.SD)) %>%
+    rename(ASDRForeign = 'ASDR_Foreign-Born',
+           ASDRUSBorn = 'ASDR_US-Born',
+           ASDR.SDForeign = 'ASDR.SD_Foreign-Born',
+           ASDR.SDUSBorn = 'ASDR.SD_US-Born') %>%
+    mutate(ASDRDiff = ASDRForeign - ASDRUSBorn,
+           ASDRDiff.SD = sqrt(ASDR.SDForeign^2+ASDR.SDUSBorn^2))
   
   return(contributionsData)
 }
@@ -53,15 +56,21 @@ create_contributions_data <- function(data) {
 create_diff_in_diff_data <- function(data) {
 
   diffInDiffData <- data %>% 
-    pivot_wider(names_from = period, values_from = ASDRForeign:ASDRDiff) %>%
-    mutate(ASDRDiffInDiff = (`ASDRForeign_2017-2019` - ASDRForeign_2020) - (`ASDRUSBorn_2017-2019` - ASDRUSBorn_2020))
+    pivot_wider(names_from = period, 
+                values_from = c(ASDRForeign,ASDRUSBorn,ASDRDiff,
+                                ASDR.SDForeign,ASDR.SDUSBorn,ASDRDiff.SD)) %>%
+    mutate(ASDRDiffInDiff = (ASDRForeign_2020 - `ASDRForeign_2017-2019`) - (ASDRUSBorn_2020-`ASDRUSBorn_2017-2019`),
+           ASDRDiffInDiff.SD = sqrt(`ASDR.SDForeign_2017-2019`^2 + 
+                                    ASDR.SDForeign_2020^2 + 
+                                    `ASDR.SDUSBorn_2017-2019`^2 + 
+                                    ASDR.SDUSBorn_2020^2))
   
   return(diffInDiffData)
 }
 ```
 
 ```{r}
-redGrayPalette <- c(rgb(255/255,84/255,97/255),rgb(83/255,84/255,87/255))
+redGrayPalette <- c(rgb(83/255,84/255,87/255),rgb(255/255,84/255,97/255))
 ```
 
 ```{r}
@@ -74,6 +83,11 @@ contributions_plot_color_safe <- function(data,thisSex) {
                          x=ASDRDiff,
                          fill=ASDRDiff>0),
              color='black',linewidth=0.1) +
+    geom_linerange(mapping=aes(y=majorCauses,
+                         xmin=ASDRDiff-ASDRDiff.SD*2,
+                         xmax=ASDRDiff+ASDRDiff.SD*2),
+             color='black',
+             linewidth=1) +
     geom_vline(xintercept = 0) + 
     scale_fill_manual(values=redGrayPalette) + 
     coord_cartesian(xlim=c(-200,200)) +
@@ -83,7 +97,7 @@ contributions_plot_color_safe <- function(data,thisSex) {
     labs(x='',
          y='',
          fill='',
-         title='Cause-Specific Contributions to the Difference between US-Born and Foreign-Born ASDR') +
+         title='Cause-Specific Contributions to the Difference between Foreign-Born and US-Born ASDR') +
     theme_minimal() +
     theme(legend.position = 'bottom',
           panel.grid.major.y = element_blank(),
@@ -106,16 +120,21 @@ diff_in_diff_plot_color_safe <- function(data,thisSex) {
                          x=ASDRDiffInDiff,
                          fill=ASDRDiffInDiff>0),
              color='black',linewidth=0.1) +
+      geom_linerange(mapping=aes(y=majorCauses,
+                         xmin=ASDRDiffInDiff-ASDRDiffInDiff.SD*2,
+                         xmax=ASDRDiffInDiff+ASDRDiffInDiff.SD*2),
+             color='black',
+             linewidth=1) +
     geom_vline(xintercept = 0) + 
     scale_fill_manual(values=redGrayPalette) + 
-    coord_cartesian(xlim=c(-200,50)) +
+    coord_cartesian(xlim=c(-50,200)) +
     facet_wrap(~fct_relevel(raceEthnicity,
                                   'White','Hispanic','Black','Asian'),
                nrow = 1) +
     labs(x='',
          y='',
          fill='',
-         title='Changes in the Cause-Specific Contributions to the Difference between US-Born and Foreign-Born ASDR (2020 - 2017-2019)') +
+         title='Changes in the Cause-Specific Contributions to the Difference between Foreign-Born and US-Born ASDR (2020 - 2017-2019)') +
     theme_minimal() +
     theme(legend.position = 'bottom',
           panel.grid.major.y = element_blank(),
@@ -154,7 +173,7 @@ contributions_table <- function(data,thisSex) {
       `ASDRUSBorn_2020` = 'US-Born',
       `ASDRForeign_2020` = 'Foreign-Born',
       `ASDRDiff_2020` = 'Difference',
-       ASDRDiffInDiff = 'Difference in Differences') %>%
+       ASDRDiffInDiff = 'Change in Difference') %>%
     fmt_number(
       columns = `ASDRUSBorn_2017-2019`:`ASDRDiffInDiff`,
       decimals = 1
@@ -267,12 +286,10 @@ dev.off()
 
 ```{r}
 contributionsTableMales <- contributions_table(diffInDiffData,'Male')
-contributionsTableFemales <-contributions_table(diffInDiffData,'Female')
+contributionsTableFemales <- contributions_table(diffInDiffData,'Female')
 ```
 
 ```{r}
-gtsave(contributionsTableMales,here('figures','contributionsTableMales.png'),
-       vwidth = 1400,vheight = 1000, zoom=4)
-gtsave(contributionsTableFemales,here('figures','contributionsTableFemales.png'),
-       vwidth = 1400,vheight = 1000, zoom=4)
+gtsave(contributionsTableMales,here('figures','contributionsTableMales.docx'))
+gtsave(contributionsTableFemales,here('figures','contributionsTableFemales.docx'))
 ```

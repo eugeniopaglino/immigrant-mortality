@@ -30,7 +30,7 @@ set.seed(42)
 # Better to do a full restart of R before running
 rm(list=ls())
 
-i_am('R/mortalityDifferentialsPlots.Rmd')
+i_am('R/mortalityDifferentialsPlotsNoRatios.Rmd')
 
 intermediateDir <- here('data','output')
 outDir <- here('data','output')
@@ -59,7 +59,7 @@ create_abs_diff_trends_data <- function(data) {
 ```
 
 ```{r}
-create_rel_diff_trends_data <- function(data) {
+create_abs_diff_trends_by_age_data <- function(data) {
   
   diffTrendsData <- data %>%
     filter(foreign != 'Total') %>%
@@ -87,7 +87,7 @@ create_rel_diff_trends_data <- function(data) {
   
   diffTrendsData <- diffTrendsData %>%
     pivot_wider(names_from = foreign, values_from = ASDR) %>%
-    mutate(ASDRRatio = `US-Born`/`Foreign-Born`) %>%
+    mutate(ASDRDiff = `Foreign-Born`-`US-Born`) %>%
     select(-c(`US-Born`,`Foreign-Born`))
   
   return(diffTrendsData)
@@ -107,13 +107,14 @@ abs_diff_trends_simple_plot <- function(data) {
     mutate(`Non-COVID-19` = `Non-COVID-19` - Total) %>%
     pivot_longer(Total:`COVID-19`,values_to = 'ASDR', names_to = 'majorCauses') %>%
     mutate(majorCauses = factor(case_when(majorCauses == 'Total' ~ 'ASDR Baseline 2017-2019',
-                                          majorCauses == 'Non-COVID-19' ~ 'Non-COVID-19 Increase',
+                                          majorCauses == 'Non-COVID-19' ~ 'Excess ASDR for Non-COVID-19 Causes',
                                           majorCauses == 'COVID-19' ~ 'COVID-19 ASDR'),
-                                levels = c('Non-COVID-19 Increase',
+                                levels = c('Excess ASDR for Non-COVID-19 Causes',
                                            'COVID-19 ASDR',
                                            'ASDR Baseline 2017-2019')))
   
   diffTrendsPlot <- diffTrendsData %>%
+    filter(period=='2020') %>%
     ggplot() +
     geom_col(mapping = aes(y=ASDR,
                            x=fct_relevel(foreign,'US-Born','Foreign-Born'),
@@ -124,7 +125,7 @@ abs_diff_trends_simple_plot <- function(data) {
     labs(x='',
          y='Age-Standardized Death Rate (25+)',
          fill='') +
-    facet_nested_wrap(sex ~ raceEthnicity + period, nrow = 2) +
+    facet_nested_wrap(~ sex + raceEthnicity, nrow = 1) +
     theme_minimal() +
     theme(legend.position = 'bottom',
           panel.grid.major.x = element_blank(),
@@ -141,123 +142,44 @@ abs_diff_trends_simple_plot <- function(data) {
 ```
 
 ```{r}
-rel_diff_trends_simple_h_plot <- function(data) {
+abs_diff_trends_hbar_by_age_RR_plot <- function(data) {
   
-  diffTrendsData <- create_rel_diff_trends_data(data)
+  diffTrendsData <- create_abs_diff_trends_by_age_data(data)
   
-  diffTrendsPlot <- diffTrendsData %>%
-    mutate(majorCauses = fct_relevel(majorCauses,
-                                     'Total (2017-2019)',
-                                     'Non-COVID-19 (2020)',
-                                     'Total (2020)',
-                                     'COVID-19 (2020)')) %>%
-    ggplot() +
-    geom_segment(mapping = aes(y=1, yend = ASDRRatio,
-                           x=majorCauses,xend=majorCauses),
-                 linewidth=8,
-                 color='gray50')+
-    coord_trans(y='log2') +
-    labs(x='',
-         y='Ratio of US-Born to Foreign-Born ASDR') +
-    facet_nested_wrap(sex ~ raceEthnicity , nrow = 2) +
-    theme_minimal() +
-    theme(legend.position = 'bottom',
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.spacing.y = unit(2,'lines'),
-          axis.text.x = element_text(angle=90),
-          strip.text.y.left = element_text(angle=0),
-          strip.placement = 'outer',
-          strip.background.x = element_rect(fill='white')) +
-    guides(fill=guide_legend(nrow=1))
-  
-  return(diffTrendsPlot)
-}
-```
-
-```{r}
-rel_diff_trends_h_plot <- function(data) {
-  
-  diffTrendsData <- create_rel_diff_trends_data(data)
+  View(diffTrendsData)
   
   diffTrendsPlot <- diffTrendsData %>%
     filter(majorCauses != 'Non-COVID-19 (2020)') %>%
-    mutate(majorCauses = fct_relevel(majorCauses,
-                                     'Total (2017-2019)',
-                                     'Total (2020)',
-                                     'COVID-19 (2020)')) %>%
+    mutate(
+      majorCauses = case_when(majorCauses == 'COVID-19 (2020)' ~ 'COVID-19',
+                              majorCauses == 'Total (2020)' ~ '2020',
+                              majorCauses == 'Total (2017-2019)' ~ '2017-2019'),
+      majorCauses = fct_relevel(majorCauses,
+                               'COVID-19',
+                               '2020',
+                               '2017-2019'
+                               )
+      ) %>%
     ggplot() +
-    geom_linerange(mapping = aes(ymin=1, ymax = ASDRRatio,
-                           x=majorCauses,
-                           group=age),
-                 position=position_dodge2(width = 0.8,preserve = 'total'))+
-    geom_point(mapping = aes(y = ASDRRatio, x=majorCauses,
-                           shape=age,group=age,fill=age),
-             size=2.5,
-             position=position_dodge2(width = 0.8))+
-    coord_trans(y='log2') +
-    scale_shape_manual(
-      values = c(21:22),
-      breaks = c('25-64','65+'),
-      labels = c('25-64','65+'),
-      name = 'Age Group'
-      ) +
-    scale_fill_manual(
-      values=c('white','gray50'),
-      breaks = c('25-64','65+'),
-      labels = c('25-64','65+'),
-      name = 'Age Group'
-      ) +
-    labs(x='',
-         y='Ratio of US-Born to Foreign-Born ASDR') +
-    facet_nested_wrap(sex ~ raceEthnicity , nrow = 2) +
-    theme_minimal() +
-    theme(legend.position = 'bottom',
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor = element_blank(),
-          panel.spacing.y = unit(2,'lines'),
-          axis.text.x = element_text(angle=90),
-          strip.text.y.left = element_text(angle=0),
-          strip.placement = 'outer',
-          strip.background.x = element_rect(fill='white')) +
-    guides(fill=guide_legend(nrow=1))
-  
-  return(diffTrendsPlot)
-}
-```
-
-```{r}
-rel_diff_trends_hbar_plot <- function(data) {
-  
-  diffTrendsData <- create_rel_diff_trends_data(data)
-  
-  diffTrendsPlot <- diffTrendsData %>%
-    filter(majorCauses != 'Non-COVID-19 (2020)') %>%
-    mutate(majorCauses = fct_relevel(majorCauses,
-                                     'Total (2017-2019)',
-                                     'Total (2020)',
-                                     'COVID-19 (2020)')) %>%
-    ggplot() +
-    geom_linerange(mapping = aes(ymin=1, ymax = ASDRRatio,
-                           x=majorCauses,
-                           group=age,color=age),
-                 linewidth=5,
-                 position=position_dodge2(width = 0.8,preserve = 'total')) +
+    geom_linerange(mapping = aes(xmin=0, 
+                                 xmax = ASDRDiff,
+                           y=majorCauses,
+                           color=age),
+                 linewidth=5) +
+    scale_x_continuous(breaks=c(-1500,-1000,-500,-250,0,250,500)) +
     scale_color_grey() +
-    coord_trans(y='log2') +
-    labs(x='',
-         color='Age-Group',
-         y='Ratio of US-Born to Foreign-Born ASDR') +
-    facet_nested_wrap(sex ~ raceEthnicity , nrow = 2) +
+    labs(y='',
+         x='Difference between Foreign-Born and US-Born ASDR',
+         color='Age Range') +
+    facet_nested(age + raceEthnicity ~ sex,switch = 'y') +
     theme_minimal() +
     theme(legend.position = 'bottom',
-          panel.grid.major.x = element_blank(),
+          panel.grid.major.y = element_blank(),
           panel.grid.minor = element_blank(),
-          panel.spacing.y = unit(2,'lines'),
-          axis.text.x = element_text(angle=90),
           strip.text.y.left = element_text(angle=0),
           strip.placement = 'outer',
-          strip.background.x = element_rect(fill='white')) +
+          strip.background.x = element_rect(fill='white'),
+          strip.background.y = element_rect(fill='white')) +
     guides(fill=guide_legend(nrow=1))
   
   return(diffTrendsPlot)
@@ -292,52 +214,28 @@ ageStdRatesByAge <- ageStdRatesBelow65 %>%
 
 ```{r}
 absDiffTrendsSimplePlot <- abs_diff_trends_simple_plot(ageStdRates)
-relDiffTrendsSimpleHPlot <- rel_diff_trends_simple_h_plot(ageStdRates)
 absDiffTrendsSimplePlotSens <- abs_diff_trends_simple_plot(ageStdRatesSens)
-relDiffTrendsSimpleHPlotSens <- rel_diff_trends_simple_h_plot(ageStdRatesSens)
 ```
 
 ```{r}
-relDiffTrendsHPlot <- rel_diff_trends_h_plot(ageStdRatesByAge)
-relDiffTrendsHBarPlot <- rel_diff_trends_hbar_plot(ageStdRatesByAge)
+relDiffTrendsHBarPlotRR <- abs_diff_trends_hbar_by_age_RR_plot(ageStdRatesByAge)
 ```
 
 ```{r}
-svg(here(figuresDir,'absDiffTrendsSimplePlot.svg'), width = 7, height = 9)
+svg(here(figuresDir,'absDiffTrendsSimplePlot.svg'), width = 7, height = 6)
 absDiffTrendsSimplePlot
 dev.off()
 ```
 
 ```{r}
-svg(here(figuresDir,'relDiffTrendsSimpleHPlot.svg'), width = 6, height = 6)
-relDiffTrendsSimpleHPlot
-dev.off()
-```
-
-```{r}
-svg(here(figuresDir,'absDiffTrendsSimplePlotSens.svg'), width = 7, height = 9)
+svg(here(figuresDir,'absDiffTrendsSimplePlotSens.svg'), width = 7, height = 6)
 absDiffTrendsSimplePlotSens
 dev.off()
 ```
 
 ```{r}
-svg(here(figuresDir,'relDiffTrendsSimpleHPlotSens.svg'), width = 6, height = 6)
-relDiffTrendsSimpleHPlotSens
+svg(here(figuresDir,'absDiffTrendsByAgeHBarPlotRR.svg'), width = 8, height = 6)
+relDiffTrendsHBarPlotRR
 dev.off()
 ```
-
-```{r}
-svg(here(figuresDir,'relDiffTrendsHPlot.svg'), width = 8, height = 6)
-relDiffTrendsHPlot
-dev.off()
-```
-
-```{r}
-svg(here(figuresDir,'relDiffTrendsHBarPlot.svg'), width = 6, height = 6)
-relDiffTrendsHBarPlot
-dev.off()
-```
-
-
-
 

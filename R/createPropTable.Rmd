@@ -149,7 +149,7 @@ create_proportions_table <- function(path) {
 ```
 
 ```{r}
-paths <- map(2017:2019, ~ here(inDir,glue('ACS{.x}1Year'),glue('ACS{.x}1Year.xml')))
+paths <- map(c(2017:2019), ~ here(inDir,glue('ACS{.x}1Year'),glue('ACS{.x}1Year.xml')))
 ```
 
 ```{r}
@@ -160,3 +160,18 @@ proportionsData <- map_dfr(paths,create_proportions_table)
 proportionsData %>% arrow::write_feather(here(outDir,'proportionsData.feather'))
 ```
 
+```{r, eval=F}
+# For checks agains ACS tables
+proportionsData %>% 
+  filter(!(age %in% c('<1','1-4','5-14'))) %>%
+  group_by(raceEthnicity,sex,year) %>%
+  summarise(
+    across(
+      c(weightedCountUSBorn,weightedCountForeign,weightedCount),
+      ~sum(.x)
+      )
+  ) %>%
+  ungroup() %>%
+  mutate(propForeign = 100*(weightedCountForeign/weightedCount),
+         propUSBorn = 100*(weightedCountUSBorn/weightedCount))
+```

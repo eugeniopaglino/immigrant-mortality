@@ -38,23 +38,45 @@ tablesDir <- here('tables')
 
 ```{r}
 finalTable <- arrow::read_feather(here(outDir,'finalTable.feather'))
+finalTable <- finalTable %>%
+  drop_na(deaths,pop)
+```
+
+```{r}
+totals <- finalTable %>%
+  group_by(year,sex,foreign,majorCauses,age) %>%
+  summarise(across(c(deaths,pop), ~sum(.x))) %>%
+  ungroup() %>%
+  mutate(ASDR=deaths/pop,
+         logASDR=log(ASDR),
+         raceEthnicity='Total')
 ```
 
 ```{r}
 finalTable <- finalTable %>%
-  mutate(raceEthnicity = factor(raceEthnicity,
-                                levels=c('White','Hispanic',
-                                         'Black','Asian',
-                                         'American Indian/Alaska Native')),
-         raceEthnicityShort = case_when(raceEthnicity == 'White' ~ 'W',
-                                        raceEthnicity == 'Black' ~ 'B',
-                                        raceEthnicity == 'American Indian/Alaska Native' ~ 'N',
-                                        raceEthnicity == 'Asian' ~ 'A',
-                                        raceEthnicity == 'Hispanic' ~ 'H'),
-         foreignShort = case_when(foreign == 'US-Born' ~ 'N',
-                                  foreign == 'Foreign-Born' ~ 'F'),
-         startAge = as.integer(str_extract(age,'\\d{2}'))) %>%
-  filter(raceEthnicityShort %in% c('W','B','A','H'),
+  add_row(totals) %>%
+  mutate(
+    raceEthnicity = factor(
+      raceEthnicity,
+      levels=c('White','Hispanic','Black','Asian',
+               'American Indian/Alaska Native','Total'
+               )
+      ),
+    raceEthnicityShort = case_when(
+      raceEthnicity == 'White' ~ 'W',
+      raceEthnicity == 'Black' ~ 'B',
+      raceEthnicity == 'American Indian/Alaska Native' ~ 'N',
+      raceEthnicity == 'Asian' ~ 'A',
+      raceEthnicity == 'Hispanic' ~ 'H',
+      raceEthnicity == 'Total' ~ 'T'
+      ),
+    foreignShort = case_when(
+      foreign == 'US-Born' ~ 'N',
+      foreign == 'Foreign-Born' ~ 'F'
+      ),
+    startAge = as.integer(str_extract(age,'\\d{2}'))
+    ) %>%
+  filter(raceEthnicityShort %in% c('W','B','A','H','T'),
          year!=2021)
 ```
 
@@ -79,7 +101,7 @@ causeOfDeathTable <- tribble(
   'Respiratory diseases','J00–J06, J09-J18, J20-J47, J60-J70, J80-J86, J90-J99, R09.2, U04',
   'Circulatory diseases','I00–I15, I20-I52, I60-I99',
   'Malignant neoplasms','C00-C97',
-  'Alzheimer’s disease and dementia','G30-G31, F01-F03',
+  'Alzheimer disease and other dementias','G30-G31, F01-F03',
   'Diabetes','E10–E14',
   'External courses','V01-Y89',
   'All other causes','All codes not listed above'
@@ -89,7 +111,7 @@ causeOfDeathTable <- tribble(
 ```{r}
 causeOfDeathTable %>% 
   gt() %>%
-  gtsave(here(figuresDir,'ICDCodesTable.png'),zoom=4)
+  gtsave(here(figuresDir,'ICDCodesTable.docx'))
 ```
 
 ```{r}
@@ -105,8 +127,8 @@ sampleData <- exampleData %>%
             deaths=sum(deaths)) %>%
   ungroup() %>%
   group_by(sex,raceEthnicity,period,age) %>%
-  mutate(popProp=pop/sum(pop),
-         deathsProp=deaths/sum(deaths)) %>%
+  mutate(popProp=(pop/sum(pop))*100,
+         deathsProp=(deaths/sum(deaths))*100) %>%
   ungroup() %>%
   pivot_wider(names_from = c(foreignShort,period),values_from = c(pop,popProp,deaths,deathsProp)) %>%
   mutate()
@@ -138,23 +160,23 @@ create_sample_table <- function(data,thisSex) {
       age = 'Age',
      `pop_N_2017-2019`='US-Born',
      `pop_F_2017-2019`='Foreign-Born',
-     `popProp_F_2017-2019`='Proportion Foreign',
+     `popProp_F_2017-2019`='% Foreign',
      `deaths_N_2017-2019`='US-Born',
      `deaths_F_2017-2019`='Foreign-Born',
-     `deathsProp_F_2017-2019`='Proportion Foreign',
+     `deathsProp_F_2017-2019`='% Foreign',
      `pop_N_2020`='US-Born',
      `pop_F_2020`='Foreign-Born',
-     `popProp_F_2020`='Proportion Foreign',
+     `popProp_F_2020`='% Foreign',
      `deaths_N_2020`='US-Born',
      `deaths_F_2020`='Foreign-Born',
-     `deathsProp_F_2020`='Proportion Foreign') %>%
+     `deathsProp_F_2020`='% Foreign') %>%
     fmt_number(
       columns = contains('deaths_') | contains('pop_'),
       decimals = 0
     ) %>%
     fmt_number(
       columns = contains('Prop'),
-      decimals = 3
+      decimals = 1
     ) %>%
     tab_spanner(
       label = 'Person-Years 2017-2019',
@@ -190,10 +212,96 @@ sampleTableFemales <- create_sample_table(sampleData,'Female')
 ```
 
 ```{r}
-gtsave(sampleTableMales,here(figuresDir,'sampleTableMales.png'),
-       vwidth = 1500,vheight = 700,zoom=4)
-gtsave(sampleTableFemales,here(figuresDir,'sampleTableFemales.png'),
-       vwidth = 1500,vheight = 700,zoom=4)
+gtsave(sampleTableMales,here(figuresDir,'sampleTableMales.docx'))
+gtsave(sampleTableFemales,here(figuresDir,'sampleTableFemales.docx'))
+```
+
+```{r}
+sampleData2 <- exampleData %>%
+  mutate(age = case_when(age %in% c('25-34','35-44','45-54','55-64') ~ '25-64',
+                         age %in% c('65-74','75-84','85+') ~ '65+'),
+         foreignShort = case_when(foreign == 'US-Born' ~ 'N',
+                                  foreign == 'Foreign-Born' ~ 'F',
+                                  foreign == 'Total' ~ 'T')) %>%
+  
+  group_by(sex,raceEthnicity,foreignShort,period,age) %>%
+  summarise(pop=sum(pop),
+            deaths=sum(deaths)) %>%
+  ungroup() %>%
+  group_by(sex,foreignShort,period,age) %>%
+  mutate(popProp=(pop/sum(pop))*100,
+         deathsProp=(deaths/sum(deaths))*100) %>%
+  ungroup() %>%
+  pivot_wider(names_from = c(foreignShort,period),values_from = c(pop,popProp,deaths,deathsProp)) %>%
+  mutate()
+```
+
+```{r}
+create_sample_table2 <- function(data,thisSex) {
+  summaryTable <- data %>%
+    filter(sex==thisSex) %>%
+    group_by(raceEthnicity) %>%
+    select(raceEthnicity,
+           age,
+           `popProp_F_2017-2019`,
+           `popProp_N_2017-2019`,
+           `deathsProp_F_2017-2019`,
+           `deathsProp_N_2017-2019`,
+           `popProp_F_2020`,
+           `popProp_N_2020`,
+           `deathsProp_F_2020`,
+           `deathsProp_N_2020`)%>%
+    arrange(raceEthnicity) %>%
+    gt() %>%
+    cols_label(
+      raceEthnicity = 'Race/Ethnicity',
+      age = 'Age',
+     `popProp_F_2017-2019`='Proportion of All Foreign-Born',
+     `popProp_N_2017-2019`='Proportion of All US-Born',
+     `deathsProp_F_2017-2019`='Proportion of All Foreign-Born',
+     `deathsProp_N_2017-2019`='Proportion of All US-Born',
+     `popProp_F_2020`='Proportion of All Foreign-Born',
+     `popProp_N_2020`='Proportion of All US-Born',
+     `deathsProp_F_2020`='Proportion of All Foreign-Born',
+     `deathsProp_N_2020`='Proportion of All US-Born') %>%
+    fmt_number(
+      columns = contains('Prop'),
+      decimals = 1
+    ) %>%
+    tab_spanner(
+      label = 'Person-Years 2017-2019',
+      columns = contains('2017-2019') & contains('pop')
+    ) %>%
+    tab_spanner(
+      label = 'Person-Years 2020',
+      columns = contains('2020') & contains('pop')
+    ) %>%
+    tab_spanner(
+      label = 'Deaths 2017-2019',
+      columns = contains('2017-2019') & contains('deaths')
+    ) %>%
+    tab_spanner(
+      label = 'Deaths 2020',
+      columns = contains('2020') & contains('deaths')
+    ) %>%
+    cols_width(age ~ px(80),
+               contains('Prop') ~ px(130)) %>%
+    tab_options(
+      row_group.font.weight = 'bold'
+    )
+  
+  return(summaryTable)
+}
+```
+
+```{r}
+sampleTable2Males <- create_sample_table2(sampleData2,'Male')
+sampleTable2Females <- create_sample_table2(sampleData2,'Female')
+```
+
+```{r}
+gtsave(sampleTable2Males,here(figuresDir,'sampleTable2Males.docx'))
+gtsave(sampleTable2Females,here(figuresDir,'sampleTable2Females.docx'))
 ```
 
 ```{r}
@@ -293,7 +401,7 @@ create_age_std_table <- function(ageStdRates,path) {
     relocate(period,sex,raceEthnicity,foreign,majorCauses,age,deaths,pop,ASDR,logASDR,ASDR.SD,coefOfVar) %>%
     arrange(period,sex,raceEthnicity,foreign,majorCauses) %>%
     mutate(majorCauses = str_replace_all(majorCauses,'\n',' ')) %>%
-    write_excel_csv(path)
+    writexl::write_xlsx(path)
 }
 ```
 
@@ -326,9 +434,9 @@ build_summary_table_data <- function(ageStdRatesDFs,thisSex) {
   
   ratioRows <- summaryTableData %>%
     group_by(period,raceEthnicity,majorCauses,age,sex) %>%
-    summarise(ASDR = ASDR[2]/ASDR[1]) %>%
+    summarise(ASDR = ASDR[1]-ASDR[2]) %>%
     ungroup() %>%
-    mutate(foreignShort='R')
+    mutate(foreignShort='D')
   
   summaryTableData <- summaryTableData %>%
     bind_rows(ratioRows) %>%
@@ -352,19 +460,19 @@ create_summary_table <- function(data,thisSex) {
            `2017-2019_T_Total`,
            `2017-2019_N_Total`,
            `2017-2019_F_Total`,
-           `2017-2019_R_Total`,
+           `2017-2019_D_Total`,
            `2020_T_Non-COVID`,
            `2020_N_Non-COVID`,
            `2020_F_Non-COVID`,
-           `2020_R_Non-COVID`,
+           `2020_D_Non-COVID`,
            `2020_T_COVID-19`,
            `2020_N_COVID-19`,
            `2020_F_COVID-19`,
-           `2020_R_COVID-19`,
+           `2020_D_COVID-19`,
            `2020_T_Total`,
            `2020_N_Total`,
            `2020_F_Total`,
-           `2020_R_Total`
+           `2020_D_Total`
             ) %>%
     arrange(raceEthnicity) %>%
     gt() %>%
@@ -374,42 +482,38 @@ create_summary_table <- function(data,thisSex) {
       `2017-2019_T_Total` = 'Total',
       `2017-2019_F_Total` = 'Foreign-Born',
       `2017-2019_N_Total` = 'US-Born',
-      `2017-2019_R_Total` = 'Ratio',
+      `2017-2019_D_Total` = 'FB - USB ',
       `2020_T_Non-COVID` = 'Total',
       `2020_F_Non-COVID` = 'Foreign-Born',
       `2020_N_Non-COVID` = 'US-Born',
-      `2020_R_Non-COVID` = 'Ratio',
+      `2020_D_Non-COVID` = 'FB - USB ',
       `2020_T_COVID-19` = 'Total',
       `2020_F_COVID-19` = 'Foreign-Born',
       `2020_N_COVID-19` = 'US-Born',
-      `2020_R_COVID-19` = 'Ratio',
+      `2020_D_COVID-19` = 'FB - USB ',
       `2020_T_Total` = 'Total',
       `2020_F_Total` = 'Foreign-Born',
       `2020_N_Total` = 'US-Born',
-      `2020_R_Total` = 'Ratio') %>%
+      `2020_D_Total` = 'FB - USB ') %>%
     fmt_number(
-      columns = contains('_T_') | contains('_F_') | contains('_N_'),
+      columns = contains('_T_') | contains('_F_') | contains('_N_') | contains('_D_'),
       decimals = 1
-    ) %>%
-    fmt_number(
-      columns = contains('_R_'),
-      decimals = 3
     ) %>%
     tab_spanner(
       label = 'All Cause 2017-2019',
-      columns = `2017-2019_T_Total`:`2017-2019_R_Total`
+      columns = `2017-2019_T_Total`:`2017-2019_D_Total`
     ) %>%
     tab_spanner(
       label = 'Non-COVID 2020',
-      columns = `2020_T_Non-COVID`:`2020_R_Non-COVID`
+      columns = `2020_T_Non-COVID`:`2020_D_Non-COVID`
     ) %>%
     tab_spanner(
       label = 'COVID-19 2020',
-      columns = `2020_T_COVID-19`:`2020_R_COVID-19`
+      columns = `2020_T_COVID-19`:`2020_D_COVID-19`
     ) %>%
     tab_spanner(
       label = 'All Cause 2020',
-      columns = `2020_T_Total`:`2020_R_Total`
+      columns = `2020_T_Total`:`2020_D_Total`
     ) %>%
     cols_width(age ~ px(80),
                everything() ~ px(65)) %>%
@@ -448,15 +552,13 @@ summaryTableFemales
 ```
 
 ```{r}
-gtsave(summaryTableMales,here(figuresDir,'summaryTableMales.png'),
-       vwidth = 1400,vheight = 700, zoom=4)
-gtsave(summaryTableFemales,here(figuresDir,'summaryTableFemales.png'),
-       vwidth = 1400,vheight = 700, zoom=4)
+gtsave(summaryTableMales,here(figuresDir,'summaryTableMales.docx'))
+gtsave(summaryTableFemales,here(figuresDir,'summaryTableFemales.docx'))
 ```
 
 ```{r}
-create_age_std_table(ageStdRates,here(outDir,'ageStdRates.csv'))
-create_age_std_table(ageStdRatesSens,here(outDir,'ageStdRatesSens.csv'))
-create_age_std_table(ageStdRatesBelow65,here(outDir,'ageStdRatesBelow65.csv'))
-create_age_std_table(ageStdRatesAbove65,here(outDir,'ageStdRatesAbove65.csv'))
+create_age_std_table(ageStdRates,here(outDir,'ageStdRates.xlsx'))
+create_age_std_table(ageStdRatesSens,here(outDir,'ageStdRatesSens.xlsx'))
+create_age_std_table(ageStdRatesBelow65,here(outDir,'ageStdRatesBelow65.xlsx'))
+create_age_std_table(ageStdRatesAbove65,here(outDir,'ageStdRatesAbove65.xlsx'))
 ```

@@ -1,5 +1,5 @@
 ---
-title: "Mortality Ratios Plots and Tables"
+title: "Mortality Diffs Plots and Tables"
 author: "Eugenio Paglino"
 output: html_document
 ---
@@ -28,7 +28,7 @@ set.seed(42)
 # Better to do a full restart of R before running
 rm(list=ls())
 
-i_am('R/createMortTable.Rmd')
+i_am('R/compWithWhitesPlots.Rmd')
 
 inDir <- here('data','input')
 outDir <- here('data','output')
@@ -37,9 +37,9 @@ tablesDir <- here('tables')
 ```
 
 ```{r}
-ratio_trends_data <- function(data,thisSex) {
+diff_trends_data <- function(data,thisSex) {
   
-  ratioData <- data %>%
+  diffData <- data %>%
     filter(majorCauses=='Total',
            sex==thisSex) %>%
     select(-logASDR) %>%
@@ -51,27 +51,27 @@ ratio_trends_data <- function(data,thisSex) {
            foreign = fct_relevel(foreign,'Total','US-Born','Foreign-Born')) %>%
     arrange(period,sex,foreign) %>%
     fill(White) %>%
-    mutate(ratioHispanic = Hispanic/White,
-           ratioBlack = Black/White,
-           ratioAsian = Asian/White) %>%
+    mutate(diffHispanic = Hispanic-White,
+           diffBlack = Black-White,
+           diffAsian = Asian-White) %>%
     select(-c(White:Asian)) %>%
-    pivot_longer(ratioHispanic:ratioAsian,names_to = 'comparison',values_to = 'ratio') %>%
-    mutate(comparison = factor(case_when(comparison == 'ratioHispanic' ~ 'Hispanic',
-                                         comparison == 'ratioBlack' ~ 'Black',
-                                         comparison == 'ratioAsian' ~ 'Asian'),
+    pivot_longer(diffHispanic:diffAsian,names_to = 'comparison',values_to = 'diff') %>%
+    mutate(comparison = factor(case_when(comparison == 'diffHispanic' ~ 'Hispanic',
+                                         comparison == 'diffBlack' ~ 'Black',
+                                         comparison == 'diffAsian' ~ 'Asian'),
                                levels=c('Hispanic','Black','Asian')))
   
-  return(ratioData)
+  return(diffData)
 }
 ```
 
 ```{r}
-ratio_trends_plot <- function(data,thisSex) {
+diff_trends_plot <- function(data,thisSex) {
 
   linesData <- data %>%
-    pivot_wider(names_from = period, values_from = ratio)
+    pivot_wider(names_from = period, values_from = diff)
   
-  ratioTrendsPlot <- data %>%
+  diffTrendsPlot <- data %>%
     ggplot() +
     geom_vline(xintercept = 1) +
     geom_segment(data = linesData,
@@ -80,13 +80,13 @@ ratio_trends_plot <- function(data,thisSex) {
                                x=`2017-2019`,xend=`2020`),
                  linewidth=0.3) +
     geom_point(mapping = aes(y=fct_relevel(foreign,'Total','US-Born','Foreign-Born'),
-                             x=ratio,shape=period,fill=period), size=3) +
+                             x=diff,shape=period,fill=period), size=3) +
     scale_shape_manual(values=c(22,21)) +
     scale_fill_manual(values=c('white','gray50')) +
-    scale_x_continuous(limits = c(0.4,1.5),breaks=c(0.5,0.67,1,1.5),trans='log2') +
+    scale_x_continuous(limits = c(-800,800),breaks=seq(-750,750,250)) +
     labs(title=paste0(thisSex,'s'),
          x='',
-         y='Ratio of Age-Standardized Death Rates',
+         y='Diff of ASDRs (Ref. Total White Population)',
          shape='Period',
          fill='Period') +
     facet_wrap(~ comparison, nrow = 1) +
@@ -99,18 +99,18 @@ ratio_trends_plot <- function(data,thisSex) {
           strip.placement = 'outer',
           strip.background.x = element_rect(fill='white'))
   
-  return(ratioTrendsPlot)
+  return(diffTrendsPlot)
 }
 ```
 
 ```{r}
-create_ratio_trends_table <- function(dataMales,dataFemales) {
+create_diff_trends_table <- function(dataMales,dataFemales) {
   
   data <- dataMales %>%
     add_row(dataFemales)
   
   data <- data %>%
-    pivot_wider(names_from = c(period,sex), values_from = ratio)
+    pivot_wider(names_from = c(period,sex), values_from = diff)
   
   summaryTable <- data %>%
     group_by(comparison) %>%
@@ -125,7 +125,7 @@ create_ratio_trends_table <- function(dataMales,dataFemales) {
     gt() %>%
     cols_label(
       foreign = '',
-      comparison = 'Race/Ethnicity',
+      comparison = 'Race and Hispanic Origin',
       `2017-2019_Male` = '2017-2019',
       `2020_Male` = '2020',
       `2017-2019_Female` = '2017-2019',
@@ -135,7 +135,7 @@ create_ratio_trends_table <- function(dataMales,dataFemales) {
       decimals = 3
     ) %>%
     tab_spanner(
-      label = 'Ratio of Age-Standardized Death Rates (Ref. Total White Population)',
+      label = 'Difference of ASDRs (Ref. Total White Population)',
       columns = `2017-2019_Male`:`2020_Female`,
       level = 2
     ) %>%
@@ -162,56 +162,56 @@ ageStdRates <- read_csv(here(outDir,'ageStdRates.csv'))
 ageStdRatesSens <- read_csv(here(outDir,'ageStdRatesSens.csv'))
 ```
 
-## Race/Ethnicity ASDR-Ratios by Period, Sex, and Place of Birth
+## Race/Ethnicity ASDR Differences by Period, Sex, and Place of Birth
 
 ```{r}
-ratioTrendsMalesData <- ratio_trends_data(ageStdRates,'Male')
-ratioTrendsFemalesData <- ratio_trends_data(ageStdRates,'Female')
-ratioTrendsMalesPlot <- ratio_trends_plot(ratioTrendsMalesData,'Male')
-ratioTrendsFemalesPlot <- ratio_trends_plot(ratioTrendsFemalesData,'Female')
+diffTrendsMalesData <- diff_trends_data(ageStdRates,'Male')
+diffTrendsFemalesData <- diff_trends_data(ageStdRates,'Female')
+diffTrendsMalesPlot <- diff_trends_plot(diffTrendsMalesData,'Male')
+diffTrendsFemalesPlot <- diff_trends_plot(diffTrendsFemalesData,'Female')
 ```
 
 ```{r}
-ratioTrendsMalesDataSens <- ratio_trends_data(ageStdRatesSens,'Male')
-ratioTrendsFemalesDataSens <- ratio_trends_data(ageStdRatesSens,'Female')
-ratioTrendsMalesPlotSens <- ratio_trends_plot(ratioTrendsMalesDataSens,'Male')
-ratioTrendsFemalesPlotSens <- ratio_trends_plot(ratioTrendsFemalesDataSens,'Female')
+diffTrendsMalesDataSens <- diff_trends_data(ageStdRatesSens,'Male')
+diffTrendsFemalesDataSens <- diff_trends_data(ageStdRatesSens,'Female')
+diffTrendsMalesPlotSens <- diff_trends_plot(diffTrendsMalesDataSens,'Male')
+diffTrendsFemalesPlotSens <- diff_trends_plot(diffTrendsFemalesDataSens,'Female')
 ```
 
 ```{r, fig.width=8, fig.height=8}
-combinedRatioPlots <- (ratioTrendsFemalesPlot / ratioTrendsMalesPlot) +
+combinedDiffPlots <- (diffTrendsFemalesPlot / diffTrendsMalesPlot) +
   plot_layout(guides='collect') +
   plot_annotation(tag_level = 'A') &
   theme(legend.position = 'bottom')
 
-combinedRatioPlots
+combinedDiffPlots
 ```
 
 ```{r}
-svg(here(figuresDir,'ratioTrendsPlot.svg'), width = 8, height = 8)
-combinedRatioPlots
+svg(here(figuresDir,'diffTrendsPlot.svg'), width = 8, height = 8)
+combinedDiffPlots
 dev.off()
 ```
 
 ```{r, fig.width=8, fig.height=8}
-combinedRatioPlotsSens <- (ratioTrendsFemalesPlotSens / ratioTrendsMalesPlotSens) +
+combinedDiffPlotsSens <- (diffTrendsFemalesPlotSens / diffTrendsMalesPlotSens) +
   plot_layout(guides='collect') +
   plot_annotation(tag_level = 'A') &
   theme(legend.position = 'bottom')
 
-combinedRatioPlotsSens
+combinedDiffPlotsSens
 ```
 
 ```{r}
-svg(here(figuresDir,'ratioTrendsPlotSens.svg'), width = 8, height = 8)
-combinedRatioPlotsSens
+svg(here(figuresDir,'diffTrendsPlotSens.svg'), width = 8, height = 8)
+combinedDiffPlotsSens
 dev.off()
 ```
 
 ```{r}
-ratioTrendsTable <- create_ratio_trends_table(ratioTrendsMalesData,ratioTrendsFemalesData)
+diffTrendsTable <- create_diff_trends_table(diffTrendsMalesData,diffTrendsFemalesData)
 ```
 
 ```{r}
-gtsave(ratioTrendsTable,here(figuresDir,'ratioTrendsTable.png'), zoom=4)
+gtsave(diffTrendsTable,here(figuresDir,'diffTrendsTable.docx'))
 ```

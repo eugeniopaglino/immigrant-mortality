@@ -7,45 +7,43 @@ Eugenio Paglino and Irma T. Elo
 
 ## Immigrant Mortality during the COVID-19 Pandemic
 
-In this project we investigate patterns of mortality among immigrants in
-the United States during the first year of the COVID-19 pandemic. We
-used death record files for 2017-2020 from the National Center for
-Health Statistics (NCHS) under a data user agreement. We classified
-deaths by sex, age, bridged race/ethnicity, nativity, and cause of
-death. US-born deaths include those that occurred to individuals who
-were born and residing in the 50 US states. Foreign-born deaths were
-those that occurred to foreign-born individuals who reside in the 50 US
-states.
+We used death records for 2017-2020 from the National Center for Health
+Statistics (NCHS) under a data user agreement. We classified deaths by
+sex, age, bridged race, Hispanic origin, nativity, and cause of death.
+Deaths of US-born residents include deaths of individuals who were born
+and resided in the 50 US states, and deaths of foreign-born residents
+include deaths of foreign-born individuals residing in the 50 US states.
 
-We obtained population counts by single years of age, bridged
-race/ethnicity, and sex for 2017-2020 from the CDC WONDER portal. We
-used the 2017-2019 American Community Survey (ACS) 1-year files to
-estimate the proportion foreign born by 10-year age groups, sex, and
-race and ethnicity. We then applied these proportions to the population
-counts to estimate foreign-born and US-born populations by 10-year age
-groups, sex, and race/ethnicity. Because the 2020 ACS data collection
-was affected by the COVID-19 pandemic, we applied the 2019 proportions
-to the 2020 population data. Appendix Tables 1a and 1b present the
-number of deaths and populations by nativity, race/ethnicity, and sex
+We obtained US population counts by age, bridged race, Hispanic origin,
+and sex for 2017-2020 from CDC WONDER. To estimate population by
+nativity we pooled the 2017-2019 American Community Survey (ACS) 1-year
+files to estimate the proportion foreign-born by age, sex, race, and
+Hispanic origin. We then applied these proportions to the population
+counts to obtain populations by 10-year age groups, sex, race, Hispanic
+origin, and nativity. Because the pandemic affected the 2020 ACS data
+collection, we applied the 2019 proportions to the 2020 Census
+population estimates. Supplementary Tables 1a and 1b present the number
+of deaths and populations by nativity, race, Hispanic origin, and sex
 for broad age groups in 2017-2019 and 2020.
 
 We included nine exhaustive and mutually exclusive cause-of-death
 categories based on the underlying cause of death. These are respiratory
-diseases, circulatory diseases, cancers, Alzheimer’s disease and
-dementia, diabetes, COVID-19, external causes, and all other causes of
-death combined. We chose these cause-of-death categories because
-mortality from them has been linked to the COVID-19 pandemic. Because of
-large native-born and foreign-born differences in external cause
-mortality, we included these as a separate category.
+diseases, circulatory diseases, cancers, Alzheimer disease and other
+dementias, diabetes, COVID-19, external causes, and all other causes
+combined (Supplementary Table 2). We chose these causes because
+mortality from them increased during the pandemic.
 
-We then calculated age and sex-specific death rates for 10-year age
-groups by nativity and race/ethnicity. Age-standardized death rates
-(ASDR) were then computed for all causes combined, COVID-19, and all
+Using the average 2017-2020 age distribution as the standard, we
+calculated age-standardized death rates (ASDR) by sex, race,
+Hispanic-origin, and nativity for all causes combined, COVID-19, and all
 causes other than COVID-19 at ages 25+, 25-64, and 65+ and by the more
-detailed causes of death at ages 25+ for the pre-pandemic period
-2017-2019 and for 2020. We pooled three pre-pandemic years to adjust for
-year-to-year fluctuations in the death rates. We age-standardized the
-rates using the average age-structure of the US population in 2017-2020.
+detailed causes at ages 25+ for 2017-2019 and 2020. We pooled three
+pre-pandemic years to adjust for year-to-year fluctuations in death
+rates. For each ASDR, we computed standard errors (SD) and coefficients
+of variation (SD/ASDR), which are included in the Supplementary
+Material. Because the size our smallest group (US-born Asian females in
+2020) exceeds one million, all standard errors are small, and the
+largest coefficient of variation is 3.75%.
 
 Based on these data, we examined the contribution to COVID-19 and all
 other causes of death, other than COVID-19, to the change in all-cause
@@ -60,7 +58,24 @@ In this repository we stored all the codes needed to reproduce the
 figures and tables in the paper as well as supplementary material. Here
 is the repository structure.
 
-    ## C:/Users/eugen/Dropbox/Upenn/GitHub/pandemic-immigrant-mortality
+    ## /Users/eugeniopaglino/Dropbox/Upenn/GitHub/pandemic-immigrant-mortality
+    ## ├── R
+    ## │   ├── compWithWhitesPlots.Rmd
+    ## │   ├── contributionsPlots.Rmd
+    ## │   ├── createComorbTable.Rmd
+    ## │   ├── createComorbTableComp.Rmd
+    ## │   ├── createFinalTable.Rmd
+    ## │   ├── createMortTable.Rmd
+    ## │   ├── createPopTableCDC.Rmd
+    ## │   ├── createPropTable.Rmd
+    ## │   ├── mortalityDifferentialsPlots.Rmd
+    ## │   ├── mortalityDifferentialsPlotsNoRatios.Rmd
+    ## │   ├── mortalityRatiosPlots.Rmd
+    ## │   ├── relativeComorbTable.Rmd
+    ## │   ├── sampleAndSummaryTables.Rmd
+    ## │   └── statsForAbstract.xlsx
+    ## ├── README.Rmd
+    ## ├── README.md
     ## ├── data
     ## │   ├── input
     ## │   │   ├── ACS20171Year
@@ -73,10 +88,11 @@ is the repository structure.
     ## │   │   │   ├── ACS20191Year.dat
     ## │   │   │   └── ACS20191Year.xml
     ## │   │   ├── ACS20201Year
-    ## │   │   │   ├── ACS2020_PUMS_README.pdf
-    ## │   │   │   ├── psam_pusa.csv
-    ## │   │   │   ├── psam_pusb.csv
-    ## │   │   │   └── pums_estimates_20.csv
+    ## │   │   │   ├── ACS20201Year.dat
+    ## │   │   │   └── ACS20201Year.xml
+    ## │   │   ├── ACS20211Year
+    ## │   │   │   ├── ACS20211Year.dat
+    ## │   │   │   └── ACS20211Year.xml
     ## │   │   ├── ACSDescStats
     ## │   │   │   ├── ACS17to19.dat
     ## │   │   │   └── ACS17to19.xml
@@ -93,42 +109,47 @@ is the repository structure.
     ## │   │   │   └── ICD10CMCodesDetailed.txt
     ## │   │   ├── mort2017
     ## │   │   │   ├── 2014 Mortality History File Contents.doc
-    ## │   │   │   ├── Mort2005ToPresentAllCntyLayout_NAPHSIS.doc
     ## │   │   │   ├── MULT2017.USPSAllCnty.zip
     ## │   │   │   ├── MULT2017.USPSAllCnty.zip.exe
-    ## │   │   │   └── MULT2017USAllCnty.txt
+    ## │   │   │   ├── MULT2017USAllCnty.txt
+    ## │   │   │   └── Mort2005ToPresentAllCntyLayout_NAPHSIS.doc
     ## │   │   ├── mort2018
-    ## │   │   │   ├── Mort2005ToPresentAllCntyLayout_NAPHSIS.doc
-    ## │   │   │   ├── Mort2018PS.AllCnty.txt
     ## │   │   │   ├── MULT2018.USPSAllCnty.zip.exe
-    ## │   │   │   └── MULT2018USAllCnty.txt
-    ## │   │   ├── mort2019
+    ## │   │   │   ├── MULT2018USAllCnty.txt
     ## │   │   │   ├── Mort2005ToPresentAllCntyLayout_NAPHSIS.doc
+    ## │   │   │   └── Mort2018PS.AllCnty.txt
+    ## │   │   ├── mort2019
     ## │   │   │   ├── MULT2019.USPSAllCnty.zip.exe
     ## │   │   │   ├── MULT2019PS.AllCnty.txt
-    ## │   │   │   └── MULT2019USAllCnty.txt
+    ## │   │   │   ├── MULT2019USAllCnty.txt
+    ## │   │   │   └── Mort2005ToPresentAllCntyLayout_NAPHSIS.doc
     ## │   │   ├── mort2020
-    ## │   │   │   ├── Mort_2005ToPresentAllCntyLayout_NAPHSIS.doc
     ## │   │   │   ├── MULT2020.PSAllCnty.txt
     ## │   │   │   ├── MULT2020.USPSAllCnty.zip
     ## │   │   │   ├── MULT2020.USPSAllCnty.zip.exe
-    ## │   │   │   └── MULT2020USAllCnty.txt
+    ## │   │   │   ├── MULT2020USAllCnty.txt
+    ## │   │   │   └── Mort_2005ToPresentAllCntyLayout_NAPHSIS.doc
     ## │   │   ├── mort2021
-    ## │   │   │   ├── Mort_2021 Historical File Documentation.pdf
     ## │   │   │   ├── MULT2021PSAllCnty.txt
-    ## │   │   │   └── MULT2021USAllCnty.txt
+    ## │   │   │   ├── MULT2021USAllCnty.txt
+    ## │   │   │   └── Mort_2021 Historical File Documentation.pdf
     ## │   │   ├── mortPop
-    ## │   │   │   ├── countypop1990to2020_formatted.dta
-    ## │   │   │   └── Documentation - mortpop files.docx
+    ## │   │   │   ├── Documentation - mortpop files.docx
+    ## │   │   │   └── countypop1990to2020_formatted.dta
     ## │   │   └── utilities
     ## │   │       ├── FIPSmetroregion4cat.csv
     ## │   │       ├── stateBEARegionCrosswalk.rds
     ## │   │       └── states.csv
     ## │   └── output
     ## │       ├── ageStdRates.csv
+    ## │       ├── ageStdRates.xlsx
     ## │       ├── ageStdRatesAbove65.csv
+    ## │       ├── ageStdRatesAbove65.xlsx
     ## │       ├── ageStdRatesBelow65.csv
+    ## │       ├── ageStdRatesBelow65.xlsx
+    ## │       ├── ageStdRatesForPrint.xlsx
     ## │       ├── ageStdRatesSens.csv
+    ## │       ├── ageStdRatesSens.xlsx
     ## │       ├── comorbTableUCD.csv
     ## │       ├── comorbTableUCDComp.csv
     ## │       ├── exampleData.csv
@@ -142,47 +163,58 @@ is the repository structure.
     ## │       ├── summaryTableDataFemales.csv
     ## │       └── summaryTableDataMales.csv
     ## ├── figures
+    ## │   ├── ICDCodesTable.docx
+    ## │   ├── ICDCodesTable.png
+    ## │   ├── USBornForeignDiffFemalesColorSafePlot.svg
+    ## │   ├── USBornForeignDiffFemalesColorSafePlotSens.svg
+    ## │   ├── USBornForeignDiffMalesColorSafePlot.svg
+    ## │   ├── USBornForeignDiffMalesColorSafePlotSens.svg
+    ## │   ├── absDiffTrendsByAgeHBarPlotRR.svg
     ## │   ├── absDiffTrendsSimplePlot.svg
     ## │   ├── absDiffTrendsSimplePlotSens.svg
+    ## │   ├── ageStdRatesForPrint.pdf
     ## │   ├── comorbTableUCDForeign.png
     ## │   ├── comorbTableUCDForeignComp.png
     ## │   ├── comorbTableUCDUS.png
     ## │   ├── comorbTableUCDUSComp.png
+    ## │   ├── contributionsTableFemales.docx
     ## │   ├── contributionsTableFemales.png
+    ## │   ├── contributionsTableMales.docx
     ## │   ├── contributionsTableMales.png
-    ## │   ├── ICDCodesTable.png
+    ## │   ├── diffTrendsPlot.svg
+    ## │   ├── diffTrendsPlotSens.svg
+    ## │   ├── diffTrendsTable.docx
+    ## │   ├── diffTrendsTable.png
     ## │   ├── popTable.png
     ## │   ├── ratioTrendsPlot.svg
+    ## │   ├── ratioTrendsPlot2.svg
     ## │   ├── ratioTrendsPlotSens.svg
     ## │   ├── ratioTrendsTable.png
-    ## │   ├── relativeComorbTableForeign.png
-    ## │   ├── relativeComorbTableUS.png
     ## │   ├── relDiffTrendsHBarPlot.svg
+    ## │   ├── relDiffTrendsHBarPlotRR.svg
     ## │   ├── relDiffTrendsHPlot.svg
     ## │   ├── relDiffTrendsSimpleHPlot.svg
     ## │   ├── relDiffTrendsSimpleHPlotSens.svg
+    ## │   ├── relativeComorbTableForeign.png
+    ## │   ├── relativeComorbTableUS.png
+    ## │   ├── sampleTable2Females.docx
+    ## │   ├── sampleTable2Females.png
+    ## │   ├── sampleTable2Males.docx
+    ## │   ├── sampleTable2Males.png
+    ## │   ├── sampleTableFemales.docx
     ## │   ├── sampleTableFemales.png
+    ## │   ├── sampleTableMales.docx
     ## │   ├── sampleTableMales.png
+    ## │   ├── summaryTableFemales.docx
     ## │   ├── summaryTableFemales.png
-    ## │   ├── summaryTableMales.png
-    ## │   ├── USBornForeignDiffFemalesColorSafePlot.svg
-    ## │   ├── USBornForeignDiffFemalesColorSafePlotSens.svg
-    ## │   ├── USBornForeignDiffMalesColorSafePlot.svg
-    ## │   └── USBornForeignDiffMalesColorSafePlotSens.svg
-    ## ├── R
-    ## │   ├── contributionsPlots.Rmd
-    ## │   ├── createComorbTable.Rmd
-    ## │   ├── createComorbTableComp.Rmd
-    ## │   ├── createFinalTable.Rmd
-    ## │   ├── createMortTable.Rmd
-    ## │   ├── createPopTableCDC.Rmd
-    ## │   ├── createPropTable.Rmd
-    ## │   ├── mortalityDifferentialsPlots.Rmd
-    ## │   ├── mortalityRatiosPlots.Rmd
-    ## │   ├── relativeComorbTable.Rmd
-    ## │   └── sampleAndSummaryTables.Rmd
-    ## ├── README.md
-    ## └── README.Rmd
+    ## │   ├── summaryTableMales.docx
+    ## │   └── summaryTableMales.png
+    ## ├── paper
+    ## │   └── manustricp_DR_SM.docx
+    ## └── presentation
+    ##     ├── 2023 CSERI T.S. poster template.potx
+    ##     ├── CSERI_presentation.pdf
+    ##     └── CSERI_presentation.pptx
 
 The `data/output` folder contains all the datasets produced in the
 project. The most important ones are the `ageStdRates*.csv` files that
@@ -193,7 +225,11 @@ remaining files are produced in the project as intermediate steps. The
 `figures` folder contains all figures and tables of the project.
 Finally, the `R` folder contains all the code used to clean and analyse
 the data. This repository does not contain the individual level death
-records because they are not publicly available.
+records because they are not publicly available. The public version of
+these data, in which information on place of birth has been masked, can
+be obtained from the [Vital Statistics Online Data
+Portal](https://www.cdc.gov/nchs/data_access/vitalstatsonline.htm#Mortality_Multiple).
+They have the same structure as the data we used.
 
 The table below details the structure of the `ageStdRates*.csv` files.
 
@@ -317,7 +353,7 @@ Group of the underlying cause of death reported on the death
 certificates.
 </td>
 <td style="text-align:left;">
-‘All other causes’ ‘Alzheimer’s disease and dementia’ ‘Circulatory
+‘All other causes’ ‘Alzheimer disease and other dementias’ ‘Circulatory
 diseases’ ‘COVID-19’ ‘Diabetes’ and 4 more
 </td>
 <td style="text-align:left;">
@@ -591,7 +627,7 @@ Group of the underlying cause of death reported on the death
 certificates.
 </td>
 <td style="text-align:left;">
-‘All other causes’ ‘Alzheimer’s disease and dementia’ ‘Circulatory
+‘All other causes’ ‘Alzheimer disease and other dementias’ ‘Circulatory
 diseases’ ‘COVID-19’ ‘Diabetes’ and 4 more
 </td>
 <td style="text-align:left;">
@@ -865,7 +901,7 @@ Group of the underlying cause of death reported on the death
 certificates.
 </td>
 <td style="text-align:left;">
-‘All other causes’ ‘Alzheimer’s disease and dementia’ ‘Circulatory
+‘All other causes’ ‘Alzheimer disease and other dementias’ ‘Circulatory
 diseases’ ‘COVID-19’ ‘Diabetes’ and 4 more
 </td>
 <td style="text-align:left;">
@@ -1139,7 +1175,7 @@ Group of the underlying cause of death reported on the death
 certificates.
 </td>
 <td style="text-align:left;">
-‘All other causes’ ‘Alzheimer’s disease and dementia’ ‘Circulatory
+‘All other causes’ ‘Alzheimer disease and other dementias’ ‘Circulatory
 diseases’ ‘COVID-19’ ‘Diabetes’ and 4 more
 </td>
 <td style="text-align:left;">

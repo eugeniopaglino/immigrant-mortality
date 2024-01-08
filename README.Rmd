@@ -33,23 +33,27 @@ i_am('README.Rmd')
 ```
 ## Immigrant Mortality during the COVID-19 Pandemic
 
-In this project we investigate patterns of mortality among immigrants in the United States during the first year of the COVID-19 pandemic. We used death record files for 2017-2020 from the National Center for Health Statistics (NCHS) under a data user agreement. We classified deaths by sex, age, bridged race/ethnicity, nativity, and cause of death. US-born deaths include those that occurred to individuals who were born and residing in the 50 US states. Foreign-born deaths were those that occurred to foreign-born individuals who reside in the 50 US states. 
+We used death records for 2017-2020 from the National Center for Health Statistics (NCHS) under a data user agreement. We classified deaths by sex, age, bridged race, Hispanic origin, nativity, and cause of death. Deaths of US-born residents include deaths of individuals who were born and resided in the 50 US states, and deaths of foreign-born residents include deaths of foreign-born individuals residing in the 50 US states.
 
-We obtained population counts by single years of age, bridged race/ethnicity, and sex for 2017-2020 from the CDC WONDER portal. We used the 2017-2019 American Community Survey (ACS) 1-year files to estimate the proportion foreign born by 10-year age groups, sex, and race and ethnicity. We then applied these proportions to the population counts to estimate foreign-born and US-born populations by 10-year age groups, sex, and race/ethnicity. Because the 2020 ACS data collection was affected by the COVID-19 pandemic, we applied the 2019 proportions to the 2020 population data. Appendix Tables 1a and 1b present the number of deaths and populations by nativity, race/ethnicity, and sex for broad age groups in 2017-2019 and 2020. 
+We obtained US population counts by age, bridged race, Hispanic origin, and sex for 2017-2020 from CDC WONDER. To estimate population by nativity we pooled the 2017-2019 American Community Survey (ACS) 1-year files to estimate the proportion foreign-born by age, sex, race, and Hispanic origin. We then applied these proportions to the population counts to obtain populations by 10-year age groups, sex, race, Hispanic origin, and nativity. Because the pandemic affected the 2020 ACS data collection, we applied the 2019 proportions to the 2020 Census population estimates. Supplementary Tables 1a and 1b present the number of deaths and populations by nativity, race, Hispanic origin, and sex for broad age groups in 2017-2019 and 2020.
 
-We included nine exhaustive and mutually exclusive cause-of-death categories based on the underlying cause of death. These are respiratory diseases, circulatory diseases, cancers, Alzheimer’s disease and dementia, diabetes, COVID-19, external causes, and all other causes of death combined. We chose these cause-of-death categories because mortality from them has been linked to the COVID-19 pandemic. Because of large native-born and foreign-born differences in external cause mortality, we included these as a separate category. 
+We included nine exhaustive and mutually exclusive cause-of-death categories based on the underlying cause of death. These are respiratory diseases, circulatory diseases, cancers, Alzheimer disease and other dementias, diabetes, COVID-19, external causes, and all other causes combined (Supplementary Table 2). We chose these causes because mortality from them increased during the pandemic.
 
-We then calculated age and sex-specific death rates for 10-year age groups by nativity and race/ethnicity. Age-standardized death rates (ASDR) were then computed for all causes combined, COVID-19, and all causes other than COVID-19 at ages 25+, 25-64, and 65+ and by the more detailed causes of death at ages 25+ for the pre-pandemic period 2017-2019 and for 2020. We pooled three pre-pandemic years to adjust for year-to-year fluctuations in the death rates. We age-standardized the rates using the average age-structure of the US population in 2017-2020. 
+Using the average 2017-2020 age distribution as the standard, we calculated age-standardized death rates (ASDR) by sex, race, Hispanic-origin, and nativity for all causes combined, COVID-19, and all causes other than COVID-19 at ages 25+, 25-64, and 65+ and by the more detailed causes at ages 25+ for 2017-2019 and 2020. We pooled three pre-pandemic years to adjust for year-to-year fluctuations in death rates. For each ASDR, we computed standard errors (SD) and coefficients of variation (SD/ASDR), which  are included in the Supplementary Material. Because the size our smallest group (US-born Asian females in 2020) exceeds one million, all standard errors are small, and the largest coefficient of variation is 3.75%. 
 
 Based on these data, we examined the contribution to COVID-19 and all other causes of death, other than COVID-19, to the change in all-cause mortality between 2017-2019 and 2020 by sex, nativity, and race/ethnicity at ages 25+, 25-64 and 65+. We further decomposed the cause-of-death contributions by the more detailed cause-of-death categories to US-born and foreign-born difference in ASDRs at ages 25+ by race/ethnicity and sex in 2017-2019 and 2020 and their contributions to the change in these differences between 2017-2019 and 2020.
 
 In this repository we stored all the codes needed to reproduce the figures and tables in the paper as well as supplementary material. Here is the repository structure.
 
 ```{r}
-dir_tree(here())
+dir_tree(
+  path=here(),
+  regexp='ACS20201Year|ACS20211Year|mort2021|mortPop|utilities|presentation',
+  invert=T
+  )
 ```
 
-The `data/output` folder contains all the datasets produced in the project. The most important ones are the `ageStdRates*.csv` files that store the age standardized crude death rates by sex, race/ethnicity, nativity, cause of death, and period together with uncertainty measures for each rate. The structure of these files is described below. The remaining files are produced in the project as intermediate steps. The `figures` folder contains all figures and tables of the project. Finally, the `R` folder contains all the code used to clean and analyse the data. This repository does not contain the individual level death records because they are not publicly available.
+The `data/output` folder contains all the datasets produced in the project. The most important ones are the `ageStdRates*.csv` files that store the age standardized crude death rates by sex, race/ethnicity, nativity, cause of death, and period together with uncertainty measures for each rate. The structure of these files is described below. The remaining files are produced in the project as intermediate steps. The `figures` folder contains all figures and tables of the project. Finally, the `R` folder contains all the code used to clean and analyse the data. This repository does not contain the individual level death records because they are not publicly available. The public version of these data, in which information on place of birth has been masked, can be obtained from the [Vital Statistics Online Data Portal](https://www.cdc.gov/nchs/data_access/vitalstatsonline.htm#Mortality_Multiple). They have the same structure as the data we used.
 
 The table below details the structure of the `ageStdRates*.csv` files.
 
@@ -125,7 +129,7 @@ autoDictionary <- function(.file_path,
 ```{r print dictionary, results='asis'}
 fileNames <- list.files(
   here::here('data', 'output'),
-  pattern = 'age',
+  pattern = 'age.+\\.csv$',
   full.names = TRUE,
   recursive = TRUE
 )
