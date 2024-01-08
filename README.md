@@ -1,5 +1,5 @@
-Immigrant Mortality before and during the COVID-19 Pandemic in the
-United States
+Immigrant Mortality Advantage in the United States during the First Year
+of the COVID-19 Pandemic
 ================
 Eugenio Paglino and Irma T. Elo
 
@@ -145,39 +145,37 @@ is the repository structure.
     ## │       ├── statsForAbstract.xlsx
     ## │       ├── summaryTableDataFemales.csv
     ## │       └── summaryTableDataMales.csv
-    ## ├── figures
-    ## │   ├── ICDCodesTable.docx
-    ## │   ├── USBornForeignDiffFemalesColorSafePlot.svg
-    ## │   ├── USBornForeignDiffFemalesColorSafePlotSens.svg
-    ## │   ├── USBornForeignDiffMalesColorSafePlot.svg
-    ## │   ├── USBornForeignDiffMalesColorSafePlotSens.svg
-    ## │   ├── absDiffTrendsByAgeHBarPlotRR.svg
-    ## │   ├── absDiffTrendsSimplePlot.svg
-    ## │   ├── absDiffTrendsSimplePlotSens.svg
-    ## │   ├── ageStdRatesForPrint.pdf
-    ## │   ├── contributionsTableFemales.docx
-    ## │   ├── contributionsTableMales.docx
-    ## │   ├── diffTrendsPlot.svg
-    ## │   ├── diffTrendsPlotSens.svg
-    ## │   ├── diffTrendsTable.docx
-    ## │   ├── popTable.png
-    ## │   ├── ratioTrendsPlot.svg
-    ## │   ├── ratioTrendsPlot2.svg
-    ## │   ├── ratioTrendsPlotSens.svg
-    ## │   ├── ratioTrendsTable.png
-    ## │   ├── relDiffTrendsHBarPlot.svg
-    ## │   ├── relDiffTrendsHBarPlotRR.svg
-    ## │   ├── relDiffTrendsHPlot.svg
-    ## │   ├── relDiffTrendsSimpleHPlot.svg
-    ## │   ├── relDiffTrendsSimpleHPlotSens.svg
-    ## │   ├── sampleTable2Females.docx
-    ## │   ├── sampleTable2Males.docx
-    ## │   ├── sampleTableFemales.docx
-    ## │   ├── sampleTableMales.docx
-    ## │   ├── summaryTableFemales.docx
-    ## │   └── summaryTableMales.docx
-    ## └── paper
-    ##     └── manustricp_DR_SM.docx
+    ## └── figures
+    ##     ├── ICDCodesTable.docx
+    ##     ├── USBornForeignDiffFemalesColorSafePlot.svg
+    ##     ├── USBornForeignDiffFemalesColorSafePlotSens.svg
+    ##     ├── USBornForeignDiffMalesColorSafePlot.svg
+    ##     ├── USBornForeignDiffMalesColorSafePlotSens.svg
+    ##     ├── absDiffTrendsByAgeHBarPlotRR.svg
+    ##     ├── absDiffTrendsSimplePlot.svg
+    ##     ├── absDiffTrendsSimplePlotSens.svg
+    ##     ├── ageStdRatesForPrint.pdf
+    ##     ├── contributionsTableFemales.docx
+    ##     ├── contributionsTableMales.docx
+    ##     ├── diffTrendsPlot.svg
+    ##     ├── diffTrendsPlotSens.svg
+    ##     ├── diffTrendsTable.docx
+    ##     ├── popTable.png
+    ##     ├── ratioTrendsPlot.svg
+    ##     ├── ratioTrendsPlot2.svg
+    ##     ├── ratioTrendsPlotSens.svg
+    ##     ├── ratioTrendsTable.png
+    ##     ├── relDiffTrendsHBarPlot.svg
+    ##     ├── relDiffTrendsHBarPlotRR.svg
+    ##     ├── relDiffTrendsHPlot.svg
+    ##     ├── relDiffTrendsSimpleHPlot.svg
+    ##     ├── relDiffTrendsSimpleHPlotSens.svg
+    ##     ├── sampleTable2Females.docx
+    ##     ├── sampleTable2Males.docx
+    ##     ├── sampleTableFemales.docx
+    ##     ├── sampleTableMales.docx
+    ##     ├── summaryTableFemales.docx
+    ##     └── summaryTableMales.docx
 
 The `data/output` folder contains all the datasets produced in the
 project. The most important ones are the `ageStdRates*.csv` files that
